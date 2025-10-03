@@ -1,0 +1,135 @@
+:root{
+  --panel:#fff; --line:#e5e7eb; --muted:#f3f4f6;
+  --text:#111827; --sub:#6b7280;
+}
+
+/* بک‌دراپ وقتی سایدبار باز است */
+.sb-backdrop{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 999;
+}
+
+/* سایدبار: ثابت سمت راست — پیش‌فرض بسته */
+.sidebar{
+  position: fixed;
+  top: 0; bottom: 0; right: 0;   /* دقیقا سمت راست */
+  width: 300px; max-width: 90vw;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  padding: 14px;
+  display: flex; flex-direction: column;
+  z-index: 1000;
+
+  /* مخفی بودن پیش‌فرض: بیرون از صفحه به سمت راست */
+  transform: translateX(100%);
+  transition: transform .25s ease;
+}
+.sidebar.is-open{ transform: translateX(0); }
+
+.sb-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.sb-close{
+  border:1px solid var(--line); background:#fff; border-radius:10px;
+  padding:6px 10px; cursor:pointer;
+}
+
+.sb-menu{ overflow:auto; padding-inline: 2px; }
+.sb-item{
+  width: 100%;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px; margin:6px 0;
+  border:1px solid var(--line); border-radius:10px;
+  background:#fff; color:var(--text); text-align:right; cursor:pointer;
+}
+.sb-item:hover{ background:var(--muted); }
+.chev{ color:var(--sub); }
+
+.sb-sub{ padding: 2px 8px 8px; }
+.sb-subitem{
+  width:100%; text-align:right; margin:6px 0; padding:8px 10px;
+  border:1px dashed var(--line); border-radius:10px; background:#fff; cursor:pointer;
+}
+.sb-subitem:hover{ background:var(--muted); }
+/* زیرمنو: چینش ستونی */
+.sb-sub{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;              /* فاصله عمودی بین آیتم‌ها */
+  padding: 2px 8px 8px;
+}
+
+/* هر لینک به صورت بلوکِ تمام‌عرض */
+.sb-subitem{
+  display: block;        /* مهم: از inline به block */
+  width: 100%;
+  text-align: right;
+  padding: 8px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  text-decoration: none; /* چون NavLink هست، خط زیر حذف بشه */
+  color: inherit;
+  margin: 0;             /* اگه قبلاً margin داشتی، صفرش کن */
+}
+
+.sb-subitem:hover{ background: var(--muted); }
+
+/* اگر active استایل خواستی: */
+.sb-subitem.active{ border-style: solid; }
+
+
+/* ورودی‌ها راست‌به‌چپ */
+[dir="rtl"] input{ direction: rtl; }
+
+/* ریسپانسیو: هیچ جهت عوض نمی‌شود؛ همیشه از راست باز/بسته می‌شود */
+@media (max-width: 480px){
+  .sidebar{ width: 270px; }
+}
+:root{
+  --panel:#fff; --line:#e5e7eb; --muted:#f3f4f6;
+  --text:#111827; --sub:#6b7280;
+  --accent:#1f8cff; /* برای حالت active نرم */
+}
+
+/* چیدمان ستونی زیرمنو */
+.sb-sub{
+  display:flex; flex-direction:column;
+  gap:6px; padding:2px 8px 8px;
+}
+
+/* آیتم‌های زیرمنو: ظریف‌تر از آیتم‌های اصلی */
+.sb-subitem{
+  display:block;
+  width:100%;
+  text-align:right;
+  font-size:13px;           /* کوچک‌تر */
+  line-height:1.7;
+  padding:6px 10px;         /* پدینگ کمتر */
+  border:1px dashed var(--line);
+  border-radius:8px;        /* گردی کمتر */
+  background:#fff;
+  color:inherit;
+  text-decoration:none;
+  transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+/* هاور طبیعی */
+.sb-subitem:hover{
+  background:var(--muted);
+  border-color:#dfe3e8;
+}
+
+/* فوکِس با کیبورد */
+.sb-subitem:focus-visible{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(31,140,255,.15);
+}
+
+/* حالت فعال (وقتی همون صفحه بازه) */
+.sb-subitem.is-active{
+  background:var(--muted);
+  border-color:var(--accent);
+  border-style:solid;
+}

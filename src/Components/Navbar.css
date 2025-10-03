@@ -1,0 +1,93 @@
+:root{
+  --panel:#ffffff; --line:#e5e7eb; --muted:#f3f4f6;
+  --text:#111827; --sub:#6b7280; --danger:#ef4444;
+  --petro:#0f3d57; /* آبی نفتی برای تعطیلات */
+}
+
+/* نوار بالا */
+.nav{
+  position: sticky; top: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 16px;
+}
+
+/* راست: بردکرامب + همبرگر (فاصله داشته باشد) */
+.nav__right{ display:flex; align-items:center; gap: 12px; }
+.nav__breadcrumb{ color: var(--sub); white-space: nowrap; }
+.nav__hamburger{
+  margin-inline-start: 12px;
+  border: 1px solid var(--line); background:#fff; border-radius: 10px;
+  padding: 8px 12px; cursor: pointer;
+}
+
+/* چپ: خروج + زنگوله + چیپ تاریخ/ساعت */
+.nav__left{ display:flex; align-items:center; gap: 8px; }
+.btn{
+  appearance:none; border:1px solid var(--line); background:#fff; color:var(--text);
+  border-radius:10px; padding:8px 12px; font-size:14px; cursor:pointer; transition:.15s;
+}
+.btn:hover{ background:var(--muted); }
+.btn.icon{ width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; padding:0 }
+.btn.danger{ border-color:var(--danger); background:var(--danger); color:#fff; }
+.btn.danger:hover{ filter:brightness(0.95); }
+
+.chip{
+  font-size:13px; color:var(--text);
+  border:1px dashed var(--line);
+  padding:6px 10px; border-radius:999px;
+}
+
+/* دراپ‌داون‌ها */
+.nav__calendar, .nav__bell{ position: relative; }
+.nav__dropdown{
+  position: absolute;
+  inset-inline-end: 0; inset-block-start: calc(100% + 8px);
+  background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px;
+  box-shadow: 0 12px 24px rgba(0,0,0,.08);
+  min-width: 260px; z-index: 70;
+}
+.nav__dropdown--calendar{ width: 280px; }
+.nav__picked{ font-size:12px; color:var(--sub); margin-top:6px; }
+.empty{ font-size:12px; color:var(--sub); padding:6px; }
+.notif{ padding:8px; border-bottom:1px dashed var(--line); }
+.notif:last-child{ border-bottom:none; }
+.notif__title{ font-size:13px; color:var(--text); }
+.notif__time{ font-size:12px; color:var(--sub); }
+
+/* ====== استایل تقویم مینی ====== */
+.cal{ border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; }
+.cal__hdr{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.cal__title{ font-size:13px; color:var(--text); font-weight:600; }
+.cal__nav{ width:28px; height:28px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; }
+
+.cal__grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; }
+.cal__week{ margin-bottom:4px; }
+.cal__w{ text-align:center; font-size:12px; color:var(--sub); }
+
+.cal__d{
+  text-align:center; font-size:12px; padding:6px 0;
+  border:1px dashed var(--line); border-radius:8px; background:#fff;
+  cursor:pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease;
+}
+.cal__d:hover{ background: var(--muted); }
+.cal__d.is-today{ background: var(--muted); border-color:#cfe3ff; }
+.cal__d.is-selected{ border-style: solid; border-color:#1f8cff; box-shadow: 0 0 0 3px rgba(31,140,255,.12); }
+/* تعطیلی‌ها آبی نفتی لطیف */
+.cal__d.is-holiday{
+  background: #e8f0f5;
+  color: var(--petro);
+  border-color: #c7d7e2;
+}
+
+.cal__footer{ display:flex; justify-content:flex-end; margin-top:6px; }
+.cal__btn{ border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 10px; cursor:pointer; }
+
+/* — ریسپانسیو: موبایل/تبلت فقط خروج و زنگوله — */
+@media (max-width: 992px){
+  .nav{ padding:10px 12px; }
+  .nav__breadcrumb, .nav__hamburger, .nav__calendar{ display:none; }
+}
