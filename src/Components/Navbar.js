@@ -126,6 +126,8 @@ export default function Navbar({
   const breadcrumb = useMemo(() => {
     if (pathname.startsWith("/maintenance/inout")) return "تعمیرات و نگهداری لوله / ورود و خروج";
     if (pathname.startsWith("/maintenance/request")) return "تعمیرات و نگهداری لوله / ثبت درخواست";
+    if (pathname.startsWith("/maintenance/turning")) return "تراشکاری ";
+
     return "داشبورد";
   }, [pathname]);
 
@@ -208,3 +210,4 @@ export default function Navbar({
     </header>
   );
 }
+

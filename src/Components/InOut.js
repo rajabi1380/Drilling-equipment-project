@@ -294,7 +294,7 @@ export default function InOut() {
                     <th>مقصد</th>
                     <th>سایز</th>
                     <th>بندگیری</th>
-                    <th>تعداد</th>
+                    {/* <th>تعداد</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -440,9 +440,9 @@ function InModal({ onClose, onSubmit }) {
               {touched && missing.size && <small className="err-msg">سایز الزامی است</small>}
             </div>
           </div>
-          <div className="row">
+          {/* <div className="row">
             <input className="input" type="number" min="1" placeholder="تعداد" value={qty} onChange={(e) => setQty(Math.max(1, Number(e.target.value || 1)))} />
-          </div>
+          </div> */}
           <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
 
@@ -536,14 +536,14 @@ function OutModal({ onClose, onSubmit }) {
               بندگیری
             </label>
 
-            <input
+            {/* <input
               className="input"
               type="number"
               min="1"
               placeholder="تعداد"
               value={qty}
               onChange={(e) => setQty(Math.max(1, Number(e.target.value || 1)))}
-            />
+            /> */}
           </div>
 
           <div className="row">
