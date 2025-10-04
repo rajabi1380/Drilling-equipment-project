@@ -6,7 +6,6 @@ import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import TimePicker from "react-multi-date-picker/plugins/time_picker";
 
-/* ====== LocalStorage helpers ====== */
 const LS_KEY = "requests_v1";
 const loadLS = () => {
   try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; }
@@ -16,7 +15,6 @@ const saveLS = (data) => {
   try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {}
 };
 
-/* ====== Utilities ====== */
 const faFmt = "YYYY/MM/DD HH:mm";
 const toISO16 = (dObj) => (dObj ? new Date(dObj.toDate()).toISOString().slice(0,16) : "");
 const fmtFa = (iso) => {
@@ -294,7 +292,7 @@ export default function Request() {
         />
       )}
 
-      {/* مودال تاریخچه تجهیز */}
+      
       {historyTarget && (
         <HistoryModal
           target={historyTarget}
@@ -305,7 +303,7 @@ export default function Request() {
   );
 }
 
-/* ====== Modal: ثبت درخواست (۲ بخش) ====== */
+
 function RequestModal({ onClose, onSubmit }) {
   // تب‌ها: تراشکاری | بازرسی
   const [tab, setTab] = useState("turning"); // turning | inspection
@@ -315,16 +313,14 @@ function RequestModal({ onClose, onSubmit }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [size, setSize] = useState("");
-  const [unit, setUnit] = useState("تراشکاری"); // بر اساس تب، اتوماتیک
+  const [unit, setUnit] = useState("تراشکاری");     
   const [startObj, setStartObj] = useState(null);
   const [endObj, setEndObj] = useState(null);
   const [desc, setDesc] = useState("");
 
-  // اختصاصی تراشکاری
   const [failureName, setFailureName] = useState("");
   const [failureCode, setFailureCode] = useState("");
 
-  // تغییر تب ⇒ واحد مقصد و وضعیت را اتوماتیک تنظیم کن
   const status = tab === "inspection" ? "در انتظار بازرسی" : "در انتظار تعمیر";
   useEffect(() => {
     setUnit(tab === "inspection" ? "بازرسی" : "تراشکاری");
@@ -457,7 +453,6 @@ function HistoryModal({ target, onClose }) {
       const data = raw ? JSON.parse(raw) : { open:[], archived:[] };
       const all = [...(data.open||[]), ...(data.archived||[])];
 
-      // تاریخچه بر اساس کد تجهیز؛ اگر خواستی size هم لحاظ شود، شرط را تغییر بده
       const items = all
         .filter(x => (x.code||"") === (target.code||""))
         .sort((a,b) => (a.startISO||"").localeCompare(b.startISO||""));
@@ -517,7 +512,6 @@ function HistoryModal({ target, onClose }) {
                   </div>
                 </div>
 
-                {/* توضیحات */}
                 <div className="hc-block">
                   <div className="hc-title">توضیحات</div>
                   <div className="muted">{r.desc || "—"}</div>

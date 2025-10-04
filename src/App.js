@@ -6,8 +6,7 @@ import InOut from './Components/InOut';
 import Turning from './Components/Turning';
 
 
-// import InOut from "./Componentsnpm i react-multi-date-picker react-date-object/InOut";        // ⟵ صفحهٔ واقعی را ایمپورت کن
-import Request from "./Components/Request";    // (در صورت وجود)
+import Request from "./Components/Request";    
 import "./App.css";
 
 const Dashboard = () => <h1>داشبورد</h1>;
