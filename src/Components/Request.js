@@ -2,9 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./Request.css";
 
-/* ✅ یوتیلیتی‌ها */
+/* یوتیلیتی‌ها (حتماً مسیر فایل‌ها وجود داشته باشه) */
 import { loadLS, saveLS } from "../utils/ls";
-
 import {
   DatePicker,
   TimePicker,
@@ -15,10 +14,10 @@ import {
   toISO16,
 } from "../utils/date";
 
-/* ====== LocalStorage key ====== */
+/* کلید ذخیره‌سازی محلی */
 const LS_KEY = "requests_v1";
 
-/* ====== شماره‌دهی دستورکار ====== */
+/* شماره‌دهی دستورکار */
 const PREFIX = { wo: "WO", pm: "PM", ed: "ED" };
 const makeOrderNo = (type, seq = 1) => {
   const d = new Date();
@@ -37,11 +36,10 @@ export default function Request() {
   const [archivedOrders, setArchivedOrders] = useState(boot.archived || []);
   const [seq, setSeq] = useState(boot.seq || 1);
 
-  // ذخیره‌ی خودکار
-  useEffect(
-    () => saveLS(LS_KEY, { open: openOrders, archived: archivedOrders, seq }),
-    [openOrders, archivedOrders, seq]
-  );
+  // ذخیره‌ی خودکار (هر تغییر در آرایه‌ها/seq)
+  useEffect(() => {
+    saveLS(LS_KEY, { open: openOrders, archived: archivedOrders, seq });
+  }, [openOrders, archivedOrders, seq]);
 
   /* ---------- فیلترها ---------- */
   const [filterForm, setFilterForm] = useState({
@@ -573,7 +571,7 @@ function RequestModal({ onClose, onSubmit }) {
               plugins={[<TimePicker position="bottom" />]}
               inputClass="input"
               containerClassName="rmdp-rtl"
-              placeholder="تاریخ درخواست/شروع"
+              placeholder="תاریخ درخواست/شروع"
             />
           </div>
 
