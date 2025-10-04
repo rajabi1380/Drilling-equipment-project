@@ -3,7 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./Inout.css";
 
 /* ✅ یوتیلیتی‌های تاریخ و لوکال‌استوریج */
-import { loadLS, saveLS } from "../utils/Is.js";
+import { loadLS, saveLS } from "../utils/ls";
+
 import {
   DatePicker,
   TimePicker,
@@ -12,7 +13,7 @@ import {
   faFmt,
   fmtFa,
   toISO16,
-} from "../utils/date.js";
+} from "../utils/date";
 
 /* ---------- LocalStorage ---------- */
 const LS_KEY = "inout_v2";

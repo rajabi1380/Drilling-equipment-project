@@ -3,7 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./Request.css";
 
 /* ✅ یوتیلیتی‌ها */
-import { loadLS, saveLS } from "../utils/ls.js";
+import { loadLS, saveLS } from "../utils/ls";
+
 import {
   DatePicker,
   TimePicker,
@@ -12,7 +13,7 @@ import {
   faFmt,
   fmtFa,
   toISO16,
-} from "../utils/date.js";
+} from "../utils/date";
 
 /* ====== LocalStorage key ====== */
 const LS_KEY = "requests_v1";

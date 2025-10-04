@@ -1,4 +1,5 @@
-// src/utils/ls.js
+// small-cache helper for localStorage with a namespace key
+
 export function loadLS(key, fallback = null) {
   try {
     const raw = localStorage.getItem(key);
@@ -11,5 +12,8 @@ export function loadLS(key, fallback = null) {
 export function saveLS(key, data) {
   try {
     localStorage.setItem(key, JSON.stringify(data));
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 }
