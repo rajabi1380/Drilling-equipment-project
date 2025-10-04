@@ -20,7 +20,16 @@ const LS_KEY = "inout_v3";
 /* دکل‌ها (برای مدال دکل‌به‌دکل) */
 const RIGS = ["دکل 13", "دکل 21", "دکل 24", "دکل 28", "دکل 31"];
 
-/* موجودی کل = مجموع ورودها − مجموع خروج‌ها (انتقال دکل روی موجودی کل انبار اثری ندارد) */
+/* کاتالوگ قطعات برای انتخاب سریع */
+const EQUIP_CATALOG = [
+  { name: "Hydrill", code: "HYD-1001" },
+  { name: "Kelly", code: "KLY-2005" },
+  { name: "Drill Collar", code: "DCL-3012" },
+  { name: "Drill Pipe", code: "DPI-4500" },
+  { name: "HWDP", code: "HWD-5507" },
+];
+
+/* ===== Helpers: موجودی کل / موجودی هر قطعه ===== */
 const computeTotalStock = (rows) =>
   Math.max(
     0,
@@ -31,46 +40,147 @@ const computeTotalStock = (rows) =>
     }, 0)
   );
 
-/* موجودی هر قطعه (بر اساس name+code+size) */
 const buildItemStocks = (rows) => {
   const map = new Map();
   for (const r of rows) {
-    // انتقال دکل را در موجودی انبار لحاظ نکن (می‌خوای می‌تونی تغییر بدی)
     if (r.type !== "in" && r.type !== "out") continue;
     const key = `${(r.name || "").trim()}|${(r.code || "").trim()}|${(r.size || "").trim()}`;
     map.set(key, (map.get(key) || 0) + (r.type === "in" ? 1 : -1));
   }
-  // تبدیل به آرایه برای جدول
   return Array.from(map.entries()).map(([k, qty]) => {
     const [name, code, size] = k.split("|");
     return { name, code, size, qty: Math.max(0, qty) };
   });
 };
 
+/* ===== Helpers: Export (CSV / Word) ===== */
+const csvEscape = (v) => {
+  const s = v == null ? "" : String(v);
+  if (s.includes('"') || s.includes(",") || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+};
+
+const downloadBlob = (filename, mime, data) => {
+  const blob = new Blob([data], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
+/* — Excel/CSV */
+const exportCSV = (filename, headers, rows) => {
+  const head = headers.map(csvEscape).join(",") + "\n";
+  const body = rows
+    .map((r) => headers.map((h) => csvEscape(r[h])).join(","))
+    .join("\n");
+  // BOM برای نمایش درست حروف فارسی در Excel
+  const bom = "\uFEFF";
+  downloadBlob(filename, "text/csv;charset=utf-8", bom + head + body);
+};
+
+/* — Word/DOC (جدول HTML) */
+const exportDOC = (filename, title, headers, rows) => {
+  const headCells = headers.map((h) => `<th>${h}</th>`).join("");
+  const bodyRows = rows
+    .map(
+      (r) =>
+        `<tr>${headers
+          .map((h) => `<td>${r[h] == null ? "" : String(r[h])}</td>`)
+          .join("")}</tr>`
+    )
+    .join("");
+
+  const html = `
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+body{font-family:Tahoma,Arial,sans-serif;direction:rtl}
+h3{margin:0 0 10px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #ccc;padding:6px 8px;text-align:right;font-size:13px}
+thead th{background:#f3f4f6}
+</style>
+</head>
+<body>
+<h3>${title}</h3>
+<table>
+<thead><tr>${headCells}</tr></thead>
+<tbody>${bodyRows}</tbody>
+</table>
+</body></html>`;
+
+  downloadBlob(filename, "application/msword", html);
+};
+
+/* — سازندهٔ ردیف‌های خروجی برای هر تب */
+const mapInOutForExport = (rows) =>
+  rows
+    .filter((r) => r.type === "in" || r.type === "out")
+    .map((r) => ({
+      "نام تجهیز": r.name || "",
+      "کد تجهیز": r.code || "",
+      "تاریخ ورود": r.enterAtISO ? fmtFa(r.enterAtISO) : "",
+      "تاریخ خروج": r.exitAtISO ? fmtFa(r.exitAtISO) : "",
+      "وضعیت": r.status || "",
+      "مقصد": r.dest || "",
+      "سایز": r.size || "",
+      "بندگیری": r.bandgiri ? "✓" : "—",
+      "نوع": r.type === "in" ? "ورود" : "خروج",
+    }));
+
+const mapRigForExport = (rows) =>
+  rows
+    .filter((r) => r.type === "rig")
+    .map((r) => ({
+      "نام تجهیز": r.name || "",
+      "کد تجهیز": r.code || "",
+      "سایز": r.size || "",
+      "دکل مبدأ": r.rigFrom || "",
+      "دکل مقصد": r.rigTo || "",
+      "تاریخ درخواست": r.reqAtISO ? fmtFa(r.reqAtISO) : "",
+      "تاریخ رسیدن": r.arriveAtISO ? fmtFa(r.arriveAtISO) : "",
+      "نام درخواست‌کننده": r.requester || "",
+      "نام بازرس": r.inspector || "",
+      "تاریخ بازرسی": r.inspectAtISO ? fmtFa(r.inspectAtISO) : "",
+      "توضیحات": r.note || "",
+    }));
+
+const mapInventoryForExport = (items) =>
+  items.map((it) => ({
+    "نام تجهیز": it.name || "",
+    "کد تجهیز": it.code || "",
+    "سایز": it.size || "",
+    "موجودی هر قطعه": it.qty ?? 0,
+  }));
+
+/* ====== Component ====== */
 export default function InOut() {
-  /* تب‌ها: inventory | inout | rig */
   const [active, setActive] = useState("inout");
 
   /* بوت از LocalStorage */
   const boot = loadLS(LS_KEY, { ioRows: [], thresholds: {} });
 
-  /* آستانه‌ها (حد نرمال هر قطعه) — به ازای code+size مثلا */
-  const [thresholds, setThresholds] = useState(boot.thresholds || {}); // { "EQ-1|5\"": 3, ... }
-
-  /* لیست ردیف‌ها: ورود/خروج/انتقال دکل */
+  const [thresholds, setThresholds] = useState(boot.thresholds || {});
   const [ioRows, setIoRows] = useState(boot.ioRows || []);
 
-  /* ذخیره خودکار */
   useEffect(() => {
     saveLS(LS_KEY, { ioRows, thresholds });
   }, [ioRows, thresholds]);
 
-  /* فیلتر مشترک بالای همه تب‌ها */
+  /* فیلتر مشترک */
   const [filterForm, setFilterForm] = useState({
     name: "",
     code: "",
-    fromDate: null, // DateObject
-    toDate: null,   // DateObject
+    fromDate: null,
+    toDate: null,
   });
   const [applied, setApplied] = useState({
     name: "",
@@ -101,19 +211,15 @@ export default function InOut() {
     return ioRows.filter((r) => {
       const okName = !f.name || (r.name || "").toLowerCase().includes(f.name.toLowerCase());
       const okCode = !f.code || (r.code || "").toLowerCase().includes(f.code.toLowerCase());
-
-      // بازه تاریخ: برای ورود/خروج از enterAtISO/exitAtISO؛ برای دکل به دکل از reqAtISO/arriveAtISO
       const startISO = r.enterAtISO || r.reqAtISO || "";
       const endISO   = r.exitAtISO  || r.arriveAtISO || "";
-
       const okFrom = !f.fromISO || (startISO && startISO >= f.fromISO);
       const okTo   = !f.toISO   || (!endISO || endISO <= f.toISO);
-
       return okName && okCode && okFrom && okTo;
     });
   }, [ioRows, applied]);
 
-  /* صفحه‌بندی برای هر تب */
+  /* صفحه‌بندی */
   const [page, setPage] = useState(1);
   const pageSize = 25;
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -125,15 +231,25 @@ export default function InOut() {
   const goNext  = () => setPage((p) => Math.min(totalPages, p + 1));
   const goLast  = () => setPage(totalPages);
 
-  /* موجودی کل + موجودی اقلام برای تب موجودی */
+  /* موجودی + هشدار */
   const totalStock = useMemo(() => computeTotalStock(ioRows), [ioRows]);
   const itemStocks = useMemo(() => buildItemStocks(ioRows), [ioRows]);
 
-  /* تعیین کمبود موجودی‌ها (برای نوتی و هایلایت) */
+  // موجودی فیلتر‌شده (نام/کد) تا فیلتر مشترک روی تب موجودی هم اعمال شود
+  const inventoryFiltered = useMemo(() => {
+    const n = (applied.name || "").toLowerCase();
+    const c = (applied.code || "").toLowerCase();
+    return itemStocks.filter(
+      (it) =>
+        (!n || (it.name || "").toLowerCase().includes(n)) &&
+        (!c || (it.code || "").toLowerCase().includes(c))
+    );
+  }, [itemStocks, applied]);
+
   const lowStockItems = useMemo(() => {
     return itemStocks.filter((it) => {
       const thrKey = `${it.code}|${it.size}`;
-      const thr = thresholds[thrKey] ?? 3; // پیش‌فرض 3
+      const thr = thresholds[thrKey] ?? 3;
       return it.qty < thr;
     });
   }, [itemStocks, thresholds]);
@@ -143,7 +259,7 @@ export default function InOut() {
   const [showOut, setShowOut]   = useState(false);
   const [showRig, setShowRig]   = useState(false);
 
-  /* افزودن رکوردهای جدید */
+  /* افزودن رکوردها */
   const addIn = (payload) => {
     const enter = toISO16(payload.enterDateObj) || new Date().toISOString().slice(0, 16);
     setIoRows((prev) => [
@@ -211,10 +327,57 @@ export default function InOut() {
 
   const statusDisplay = (s) => (!s || s.trim() === "" ? "—" : s);
 
+  /* ===== Export بر اساس تب فعال ===== */
+  const exportExcel = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (active === "inout") {
+      const rows = mapInOutForExport(filtered);
+      const headers = Object.keys(rows[0] || {
+        "نام تجهیز": "", "کد تجهیز": "", "تاریخ ورود": "", "تاریخ خروج": "",
+        "وضعیت": "", "مقصد": "", "سایز": "", "بندگیری": "", "نوع": ""
+      });
+      exportCSV(`inout_${today}.csv`, headers, rows);
+    } else if (active === "rig") {
+      const rows = mapRigForExport(filtered);
+      const headers = Object.keys(rows[0] || {
+        "نام تجهیز":"", "کد تجهیز":"", "سایز":"", "دکل مبدأ":"", "دکل مقصد":"",
+        "تاریخ درخواست":"", "تاریخ رسیدن":"", "نام درخواست‌کننده":"", "نام بازرس":"", "تاریخ بازرسی":"", "توضیحات":""
+      });
+      exportCSV(`rig_to_rig_${today}.csv`, headers, rows);
+    } else {
+      const rows = mapInventoryForExport(inventoryFiltered);
+      const headers = Object.keys(rows[0] || { "نام تجهیز":"", "کد تجهیز":"", "سایز":"", "موجودی هر قطعه":0 });
+      exportCSV(`inventory_${today}.csv`, headers, rows);
+    }
+  };
+
+  const exportWord = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (active === "inout") {
+      const rows = mapInOutForExport(filtered);
+      const headers = Object.keys(rows[0] || {
+        "نام تجهیز": "", "کد تجهیز": "", "تاریخ ورود": "", "تاریخ خروج": "",
+        "وضعیت": "", "مقصد": "", "سایز": "", "بندگیری": "", "نوع": ""
+      });
+      exportDOC(`inout_${today}.doc`, "گزارش ورود/خروج", headers, rows);
+    } else if (active === "rig") {
+      const rows = mapRigForExport(filtered);
+      const headers = Object.keys(rows[0] || {
+        "نام تجهیز":"", "کد تجهیز":"", "سایز":"", "دکل مبدأ":"", "دکل مقصد":"",
+        "تاریخ درخواست":"", "تاریخ رسیدن":"", "نام درخواست‌کننده":"", "نام بازرس":"", "تاریخ بازرسی":"", "توضیحات":""
+      });
+      exportDOC(`rig_to_rig_${today}.doc`, "گزارش دکل به دکل", headers, rows);
+    } else {
+      const rows = mapInventoryForExport(inventoryFiltered);
+      const headers = Object.keys(rows[0] || { "نام تجهیز":"", "کد تجهیز":"", "سایز":"", "موجودی هر قطعه":0 });
+      exportDOC(`inventory_${today}.doc`, "گزارش موجودی هر قطعه", headers, rows);
+    }
+  };
+
   return (
     <div className="io-page" dir="rtl">
       <div className="io-card">
-        {/* نوتیفیکیشن کمبود موجودی (همیشگی تا رفع کمبود) */}
+        {/* نوتیفیکیشن کمبود موجودی */}
         {lowStockItems.length > 0 && (
           <div className="alert warn">
             <div className="alert-title">کمبود موجودی</div>
@@ -246,7 +409,7 @@ export default function InOut() {
           </button>
         </div>
 
-        {/* فیلتر مشترک بالا */}
+        {/* فیلتر مشترک */}
         <form className="io-filter" onSubmit={applyFilters}>
           <div className="io-filter__fields">
             <div className="f-item">
@@ -264,7 +427,7 @@ export default function InOut() {
                 className="input"
                 value={filterForm.code}
                 onChange={(e) => setFilterForm((v) => ({ ...v, code: e.target.value }))}
-                placeholder="مثلاً EQ-1027"
+                placeholder="مثلاً KLY-2005"
               />
             </div>
             <div className="f-item">
@@ -302,7 +465,7 @@ export default function InOut() {
             </div>
           </div>
 
-          {/* دکمه‌های مخصوص هر تب (مشترک نیستند) */}
+          {/* دکمه‌های مخصوص هر تب */}
           <div className="io-filter__actions">
             {active === "inout" && (
               <>
@@ -315,13 +478,16 @@ export default function InOut() {
                 ثبت دکل به دکل
               </button>
             )}
-            {/* برای موجودی، دکمه عملیاتی نشان نده */}
           </div>
         </form>
 
         {/* ابزار جدول */}
         <div className="table-toolbar">
-          <button className="btn ghost" onClick={() => alert("گزارش‌گیری (نمونه)")}>⬇️ گزارش‌گیری</button>
+          <div className="export-group">
+            <button className="btn" onClick={exportExcel}>خروجی Excel</button>
+            <button className="btn" onClick={exportWord}>خروجی Word</button>
+          </div>
+          <div style={{ flex: 1 }} />
           <button
             className="btn"
             onClick={() => {
@@ -371,17 +537,17 @@ export default function InOut() {
               </table>
             </div>
 
-            {/* صفحه‌بندی */}
             <div className="pagi" dir="rtl">
               <button className="btn" onClick={goFirst} disabled={page === 1}>« اول</button>
               <button className="btn" onClick={goPrev}  disabled={page === 1}>‹ قبلی</button>
               <span className="muted">{page}/{totalPages}</span>
               <button className="btn" onClick={goNext} disabled={page === totalPages}>بعدی ›</button>
               <button className="btn" onClick={goLast} disabled={page === totalPages}>آخر »</button>
-              <span className="muted">{filtered.length ? `${pageStart + 1}–${Math.min(pageStart + pageSize, filtered.length)} از ${filtered.length}` : "0 از 0"}</span>
+              <span className="muted">
+                {filtered.length ? `${pageStart + 1}–${Math.min(pageStart + pageSize, filtered.length)} از ${filtered.length}` : "0 از 0"}
+              </span>
             </div>
 
-            {/* موجودی کل انبار (هوک از قبل محاسبه شده) */}
             <div className="total-stock">موجودی کل انبار: {totalStock} عدد</div>
           </>
         )}
@@ -407,7 +573,7 @@ export default function InOut() {
                 </thead>
                 <tbody>
                   {pagedRows.length ? (
-                    pagedRows.map((r) => (
+                    pagedRows.map((r) =>
                       r.type === "rig" ? (
                         <tr key={r.id} className="row-rig">
                           <td>{r.name}</td>
@@ -423,7 +589,7 @@ export default function InOut() {
                           <td className="muted">{r.note || "—"}</td>
                         </tr>
                       ) : null
-                    ))
+                    )
                   ) : (
                     <tr><td colSpan={11} className="empty">موردی ثبت نشده است</td></tr>
                   )}
@@ -431,7 +597,6 @@ export default function InOut() {
               </table>
             </div>
 
-            {/* صفحه‌بندی + شمارش کل موارد این تب */}
             <div className="pagi" dir="rtl">
               <button className="btn" onClick={goFirst} disabled={page === 1}>« اول</button>
               <button className="btn" onClick={goPrev}  disabled={page === 1}>‹ قبلی</button>
@@ -456,8 +621,8 @@ export default function InOut() {
                   </tr>
                 </thead>
                 <tbody>
-                  {itemStocks.length ? (
-                    itemStocks.map((it, idx) => {
+                  {inventoryFiltered.length ? (
+                    inventoryFiltered.map((it, idx) => {
                       const thrKey = `${it.code}|${it.size}`;
                       const thr = thresholds[thrKey] ?? 3;
                       const low = it.qty < thr;
@@ -467,9 +632,7 @@ export default function InOut() {
                           <td>{it.code}</td>
                           <td>{it.size}</td>
                           <td>
-                            <span className={`qty-badge ${low ? "is-low" : ""}`}>
-                              {it.qty}
-                            </span>
+                            <span className={`qty-badge ${low ? "is-low" : ""}`}>{it.qty}</span>
                             <small className="muted" style={{ marginInlineStart: 8 }}>
                               حد نرمال: {thr}
                             </small>
@@ -483,8 +646,6 @@ export default function InOut() {
                 </tbody>
               </table>
             </div>
-
-            {/* توضیح: می‌تونی UI برای تغییر Threshold هم اضافه کنی */}
           </>
         )}
       </div>
@@ -494,12 +655,14 @@ export default function InOut() {
         <InModal
           onClose={() => setShowIn(false)}
           onSubmit={(p) => { addIn(p); setShowIn(false); }}
+          catalog={EQUIP_CATALOG}
         />
       )}
       {showOut && (
         <OutModal
           onClose={() => setShowOut(false)}
           onSubmit={(p) => { addOut(p); setShowOut(false); }}
+          catalog={EQUIP_CATALOG}
         />
       )}
       {showRig && (
@@ -507,18 +670,82 @@ export default function InOut() {
           rigs={RIGS}
           onClose={() => setShowRig(false)}
           onSubmit={(p) => { addRig(p); setShowRig(false); }}
+          catalog={EQUIP_CATALOG}
         />
       )}
     </div>
   );
 }
 
-/* ------------------ مودال‌ها ------------------ */
+/* ------------------ مدال انتخاب قطعه (نام+کد) ------------------ */
+function ItemPickerModal({ open, onClose, catalog, onPick }) {
+  const [q, setQ] = useState("");
+  const [sel, setSel] = useState(null);
 
-function InModal({ onClose, onSubmit }) {
-  // برای نمایش خطای الزامی از ابتدا:
+  if (!open) return null;
+
+  const filtered = catalog.filter(
+    (x) =>
+      x.name.toLowerCase().includes(q.toLowerCase()) ||
+      x.code.toLowerCase().includes(q.toLowerCase())
+  );
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal modal--small" onClick={(e) => e.stopPropagation()} dir="rtl">
+        <header className="modal__hdr">
+          <div className="modal__title">انتخاب قطعه</div>
+          <button className="modal__close" onClick={onClose}>✕</button>
+        </header>
+
+        <div className="picker">
+          <input
+            className="input"
+            placeholder="جستجو بر اساس نام یا کد..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <div className="picker-list">
+            {filtered.length ? (
+              filtered.map((it, i) => (
+                <label key={i} className="picker-row">
+                  <input
+                    type="radio"
+                    name="equip"
+                    checked={sel?.code === it.code && sel?.name === it.name}
+                    onChange={() => setSel(it)}
+                  />
+                  <span className="picker-name">{it.name}</span>
+                  <span className="picker-code">{it.code}</span>
+                </label>
+              ))
+            ) : (
+              <div className="empty">موردی یافت نشد</div>
+            )}
+          </div>
+        </div>
+
+        <footer className="modal__ftr">
+          <button className="btn" onClick={onClose}>بستن</button>
+          <button
+            className="btn primary"
+            disabled={!sel}
+            onClick={() => {
+              if (sel) onPick(sel);
+            }}
+          >
+            تأیید
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------ مودال‌ها با دکمه انتخاب از لیست ------------------ */
+
+function InModal({ onClose, onSubmit, catalog }) {
   const [touched] = useState(true);
-
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [size, setSize] = useState("");
@@ -526,6 +753,7 @@ function InModal({ onClose, onSubmit }) {
   const [status, setStatus] = useState("—");
   const [fromWhere, setFromWhere] = useState("");
   const [note, setNote] = useState("");
+  const [pickOpen, setPickOpen] = useState(false);
 
   const missing = { name: !name.trim(), code: !code.trim(), size: !size.trim() };
   const hasError = missing.name || missing.code || missing.size;
@@ -536,64 +764,81 @@ function InModal({ onClose, onSubmit }) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
-        <header className="modal__hdr">
-          <div className="modal__title">ثبت ورود</div>
-          <button className="modal__close" onClick={onClose}>✕</button>
-        </header>
+    <>
+      <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
+          <header className="modal__hdr">
+            <div className="modal__title">ثبت ورود</div>
+            <button className="modal__close" onClick={onClose}>✕</button>
+          </header>
 
-        <div className="form">
-          <div className="row">
-            <div className="col">
-              <input className={`input ${touched && missing.name ? "err" : ""}`} placeholder="* نام تجهیز" value={name} onChange={(e) => setName(e.target.value)} />
-              {touched && missing.name && <small className="err-msg">الزامی</small>}
+          <div className="form">
+            <div className="row">
+              <div className="col">
+                <div className="with-pick">
+                  <input className={`input ${touched && missing.name ? "err" : ""}`} placeholder="* نام تجهیز" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                {touched && missing.name && <small className="err-msg">الزامی</small>}
+              </div>
+              <div className="col">
+                <div className="with-pick">
+                  <input className={`input ${touched && missing.code ? "err" : ""}`} placeholder="* کد تجهیز" value={code} onChange={(e) => setCode(e.target.value)} />
+                  <button type="button" className="pick-btn" title="انتخاب از لیست" onClick={() => setPickOpen(true)}>☝️</button>
+                </div>
+                {touched && missing.code && <small className="err-msg">الزامی</small>}
+              </div>
+              <div className="col">
+                <input className={`input ${touched && missing.size ? "err" : ""}`} placeholder="* سایز" value={size} onChange={(e) => setSize(e.target.value)} />
+                {touched && missing.size && <small className="err-msg">الزامی</small>}
+              </div>
             </div>
-            <div className="col">
-              <input className={`input ${touched && missing.code ? "err" : ""}`} placeholder="* کد تجهیز" value={code} onChange={(e) => setCode(e.target.value)} />
-              {touched && missing.code && <small className="err-msg">الزامی</small>}
+
+            <div className="row">
+              <DatePicker
+                value={enterDateObj}
+                onChange={setEnterDateObj}
+                calendar={persian}
+                locale={persian_fa}
+                format={faFmt}
+                plugins={[<TimePicker position="bottom" />]}
+                inputClass="input"
+                containerClassName="rmdp-rtl"
+                placeholder="تاریخ و ساعت ورود"
+              />
+              <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option>تعمیر شده</option>
+                <option>بازرسی شده</option>
+                <option>—</option>
+              </select>
+              <input className="input" placeholder="از کجا آمده" value={fromWhere} onChange={(e) => setFromWhere(e.target.value)} />
             </div>
-            <div className="col">
-              <input className={`input ${touched && missing.size ? "err" : ""}`} placeholder="* سایز" value={size} onChange={(e) => setSize(e.target.value)} />
-              {touched && missing.size && <small className="err-msg">الزامی</small>}
-            </div>
+
+            <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
 
-          <div className="row">
-            <DatePicker
-              value={enterDateObj}
-              onChange={setEnterDateObj}
-              calendar={persian}
-              locale={persian_fa}
-              format={faFmt}
-              plugins={[<TimePicker position="bottom" />]}
-              inputClass="input"
-              containerClassName="rmdp-rtl"
-              placeholder="تاریخ و ساعت ورود"
-            />
-            <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option>تعمیر شده</option>
-              <option>بازرسی شده</option>
-              <option>—</option>
-            </select>
-            <input className="input" placeholder="از کجا آمده" value={fromWhere} onChange={(e) => setFromWhere(e.target.value)} />
-          </div>
-
-          <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e) => setNote(e.target.value)} />
+          <footer className="modal__ftr">
+            <button className="btn" onClick={onClose}>انصراف</button>
+            <button className="btn success" onClick={submit} disabled={hasError}>ثبت ورود</button>
+          </footer>
         </div>
-
-        <footer className="modal__ftr">
-          <button className="btn" onClick={onClose}>انصراف</button>
-          <button className="btn success" onClick={submit} disabled={hasError}>ثبت ورود</button>
-        </footer>
       </div>
-    </div>
+
+      <ItemPickerModal
+        open={pickOpen}
+        onClose={() => setPickOpen(false)}
+        catalog={catalog}
+        onPick={(it) => {
+          setName(it.name);
+          setCode(it.code);
+          setPickOpen(false);
+        }}
+      />
+    </>
   );
 }
 
-function OutModal({ onClose, onSubmit }) {
+function OutModal({ onClose, onSubmit, catalog }) {
   const [touched] = useState(true);
-
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [size, setSize] = useState("");
@@ -605,6 +850,7 @@ function OutModal({ onClose, onSubmit }) {
   const [driver, setDriver] = useState("");
   const [bandgiri, setBandgiri] = useState(false);
   const [note, setNote] = useState("");
+  const [pickOpen, setPickOpen] = useState(false);
 
   const missing = { name: !name.trim(), code: !code.trim(), size: !size.trim() };
   const hasError = missing.name || missing.code || missing.size;
@@ -617,77 +863,94 @@ function OutModal({ onClose, onSubmit }) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
-        <header className="modal__hdr">
-          <div className="modal__title">ثبت خروج</div>
-          <button className="modal__close" onClick={onClose}>✕</button>
-        </header>
+    <>
+      <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
+          <header className="modal__hdr">
+            <div className="modal__title">ثبت خروج</div>
+            <button className="modal__close" onClick={onClose}>✕</button>
+          </header>
 
-        <div className="form">
-          <div className="row">
-            <div className="col">
-              <input className={`input ${touched && missing.name ? "err" : ""}`} placeholder="* نام تجهیز" value={name} onChange={(e) => setName(e.target.value)} />
-              {touched && missing.name && <small className="err-msg">الزامی</small>}
+          <div className="form">
+            <div className="row">
+              <div className="col">
+                <div className="with-pick">
+                  <input className={`input ${touched && missing.name ? "err" : ""}`} placeholder="* نام تجهیز" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                {touched && missing.name && <small className="err-msg">الزامی</small>}
+              </div>
+              <div className="col">
+                <div className="with-pick">
+                  <input className={`input ${touched && missing.code ? "err" : ""}`} placeholder="* کد تجهیز" value={code} onChange={(e) => setCode(e.target.value)} />
+                  <button type="button" className="pick-btn" title="انتخاب از لیست" onClick={() => setPickOpen(true)}>☝️</button>
+                </div>
+                {touched && missing.code && <small className="err-msg">الزامی</small>}
+              </div>
+              <div className="col">
+                <input className={`input ${touched && missing.size ? "err" : ""}`} placeholder="* سایز" value={size} onChange={(e) => setSize(e.target.value)} />
+                {touched && missing.size && <small className="err-msg">الزامی</small>}
+              </div>
             </div>
-            <div className="col">
-              <input className={`input ${touched && missing.code ? "err" : ""}`} placeholder="* کد تجهیز" value={code} onChange={(e) => setCode(e.target.value)} />
-              {touched && missing.code && <small className="err-msg">الزامی</small>}
+
+            <div className="row">
+              <DatePicker
+                value={exitDateObj}
+                onChange={setExitDateObj}
+                calendar={persian}
+                locale={persian_fa}
+                format={faFmt}
+                plugins={[<TimePicker position="bottom" />]}
+                inputClass="input"
+                containerClassName="rmdp-rtl"
+                placeholder="تاریخ و ساعت خروج"
+              />
+              <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option>تعمیر شده</option>
+                <option>بازرسی شده</option>
+                <option>—</option>
+              </select>
+              <label className="input checkbox">
+                <input type="checkbox" checked={bandgiri} onChange={(e) => setBandgiri(e.target.checked)} />
+                بندگیری
+              </label>
             </div>
-            <div className="col">
-              <input className={`input ${touched && missing.size ? "err" : ""}`} placeholder="* سایز" value={size} onChange={(e) => setSize(e.target.value)} />
-              {touched && missing.size && <small className="err-msg">الزامی</small>}
+
+            <div className="row">
+              <input className="input" placeholder="مقصد" value={dest} onChange={(e) => setDest(e.target.value)} />
+              <input className="input" placeholder="مشخصات حمل کننده" value={carrier} onChange={(e) => setCarrier(e.target.value)} />
+              <input className="input" placeholder="شماره برنامه" value={planNo} onChange={(e) => setPlanNo(e.target.value)} />
             </div>
+
+            <div className="row">
+              <input className="input" placeholder="راننده" value={driver} onChange={(e) => setDriver(e.target.value)} />
+            </div>
+
+            <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
 
-          <div className="row">
-            <DatePicker
-              value={exitDateObj}
-              onChange={setExitDateObj}
-              calendar={persian}
-              locale={persian_fa}
-              format={faFmt}
-              plugins={[<TimePicker position="bottom" />]}
-              inputClass="input"
-              containerClassName="rmdp-rtl"
-              placeholder="تاریخ و ساعت خروج"
-            />
-            <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option>تعمیر شده</option>
-              <option>بازرسی شده</option>
-              <option>—</option>
-            </select>
-            <label className="input checkbox">
-              <input type="checkbox" checked={bandgiri} onChange={(e) => setBandgiri(e.target.checked)} />
-              بندگیری
-            </label>
-          </div>
-
-          <div className="row">
-            <input className="input" placeholder="مقصد" value={dest} onChange={(e) => setDest(e.target.value)} />
-            <input className="input" placeholder="مشخصات حمل کننده" value={carrier} onChange={(e) => setCarrier(e.target.value)} />
-            <input className="input" placeholder="شماره برنامه" value={planNo} onChange={(e) => setPlanNo(e.target.value)} />
-          </div>
-
-          <div className="row">
-            <input className="input" placeholder="راننده" value={driver} onChange={(e) => setDriver(e.target.value)} />
-          </div>
-
-          <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e) => setNote(e.target.value)} />
+          <footer className="modal__ftr">
+            <button className="btn" onClick={onClose}>انصراف</button>
+            <button className="btn danger" onClick={submit} disabled={hasError}>ثبت خروج</button>
+          </footer>
         </div>
-
-        <footer className="modal__ftr">
-          <button className="btn" onClick={onClose}>انصراف</button>
-          <button className="btn danger" onClick={submit} disabled={hasError}>ثبت خروج</button>
-        </footer>
       </div>
-    </div>
+
+      <ItemPickerModal
+        open={pickOpen}
+        onClose={() => setPickOpen(false)}
+        catalog={catalog}
+        onPick={(it) => {
+          setName(it.name);
+          setCode(it.code);
+          setPickOpen(false);
+        }}
+      />
+    </>
   );
 }
 
-function RigModal({ rigs, onClose, onSubmit }) {
+function RigModal({ rigs, onClose, onSubmit, catalog }) {
   const [touched] = useState(true);
-
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [size, setSize] = useState("");
@@ -701,6 +964,8 @@ function RigModal({ rigs, onClose, onSubmit }) {
   const [inspector, setInspector] = useState("");
   const [inspectAtObj, setInspectAtObj] = useState(null);
   const [note, setNote] = useState("");
+
+  const [pickOpen, setPickOpen] = useState(false);
 
   const missing = { name: !name.trim(), code: !code.trim(), size: !size.trim() };
   const hasError = missing.name || missing.code || missing.size;
@@ -717,91 +982,109 @@ function RigModal({ rigs, onClose, onSubmit }) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
-        <header className="modal__hdr">
-          <div className="modal__title">ثبت دکل به دکل</div>
-          <button className="modal__close" onClick={onClose}>✕</button>
-        </header>
+    <>
+      <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
+          <header className="modal__hdr">
+            <div className="modal__title">ثبت دکل به دکل</div>
+            <button className="modal__close" onClick={onClose}>✕</button>
+          </header>
 
-        <div className="form">
-          <div className="row">
-            <div className="col">
-              <input className={`input ${touched && missing.name ? "err" : ""}`} placeholder="* نام تجهیز" value={name} onChange={(e) => setName(e.target.value)} />
-              {touched && missing.name && <small className="err-msg">الزامی</small>}
+          <div className="form">
+            <div className="row">
+              <div className="col">
+                <div className="with-pick">
+                  <input className={`input ${touched && missing.name ? "err" : ""}`} placeholder="* نام تجهیز" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                {touched && missing.name && <small className="err-msg">الزامی</small>}
+              </div>
+              <div className="col">
+                <div className="with-pick">
+                  <input className={`input ${touched && missing.code ? "err" : ""}`} placeholder="* کد تجهیز" value={code} onChange={(e) => setCode(e.target.value)} />
+                  <button type="button" className="pick-btn" title="انتخاب از لیست" onClick={() => setPickOpen(true)}>☝️</button>
+                </div>
+                {touched && missing.code && <small className="err-msg">الزامی</small>}
+              </div>
+              <div className="col">
+                <input className={`input ${touched && missing.size ? "err" : ""}`} placeholder="* سایز" value={size} onChange={(e) => setSize(e.target.value)} />
+                {touched && missing.size && <small className="err-msg">الزامی</small>}
+              </div>
             </div>
-            <div className="col">
-              <input className={`input ${touched && missing.code ? "err" : ""}`} placeholder="* کد تجهیز" value={code} onChange={(e) => setCode(e.target.value)} />
-              {touched && missing.code && <small className="err-msg">الزامی</small>}
+
+            <div className="row">
+              <DatePicker
+                value={reqAtObj}
+                onChange={setReqAtObj}
+                calendar={persian}
+                locale={persian_fa}
+                format={faFmt}
+                plugins={[<TimePicker position="bottom" />]}
+                inputClass="input"
+                containerClassName="rmdp-rtl"
+                placeholder="تاریخ و ساعت درخواست"
+              />
+              <DatePicker
+                value={arriveAtObj}
+                onChange={setArriveAtObj}
+                calendar={persian}
+                locale={persian_fa}
+                format={faFmt}
+                plugins={[<TimePicker position="bottom" />]}
+                inputClass="input"
+                containerClassName="rmdp-rtl"
+                placeholder="تاریخ و ساعت رسیدن"
+              />
+              <select className="input" value={rigFrom} onChange={(e) => setRigFrom(e.target.value)}>
+                <option value="">دکل مبدأ</option>
+                {rigs.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
             </div>
-            <div className="col">
-              <input className={`input ${touched && missing.size ? "err" : ""}`} placeholder="* سایز" value={size} onChange={(e) => setSize(e.target.value)} />
-              {touched && missing.size && <small className="err-msg">الزامی</small>}
+
+            <div className="row">
+              <select className="input" value={rigTo} onChange={(e) => setRigTo(e.target.value)}>
+                <option value="">دکل مقصد</option>
+                {rigs.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <input className="input" placeholder="نام درخواست‌کننده" value={requester} onChange={(e) => setRequester(e.target.value)} />
+              <input className="input" placeholder="نام بازرس" value={inspector} onChange={(e) => setInspector(e.target.value)} />
             </div>
+
+            <div className="row">
+              <DatePicker
+                value={inspectAtObj}
+                onChange={setInspectAtObj}
+                calendar={persian}
+                locale={persian_fa}
+                format={faFmt}
+                plugins={[<TimePicker position="bottom" />]}
+                inputClass="input"
+                containerClassName="rmdp-rtl"
+                placeholder="تاریخ بازرسی"
+              />
+              <div className="col" />
+              <div className="col" />
+            </div>
+
+            <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
 
-          <div className="row">
-            <DatePicker
-              value={reqAtObj}
-              onChange={setReqAtObj}
-              calendar={persian}
-              locale={persian_fa}
-              format={faFmt}
-              plugins={[<TimePicker position="bottom" />]}
-              inputClass="input"
-              containerClassName="rmdp-rtl"
-              placeholder="تاریخ و ساعت درخواست"
-            />
-            <DatePicker
-              value={arriveAtObj}
-              onChange={setArriveAtObj}
-              calendar={persian}
-              locale={persian_fa}
-              format={faFmt}
-              plugins={[<TimePicker position="bottom" />]}
-              inputClass="input"
-              containerClassName="rmdp-rtl"
-              placeholder="تاریخ و ساعت رسیدن"
-            />
-            <select className="input" value={rigFrom} onChange={(e) => setRigFrom(e.target.value)}>
-              <option value="">دکل مبدأ</option>
-              {rigs.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-
-          <div className="row">
-            <select className="input" value={rigTo} onChange={(e) => setRigTo(e.target.value)}>
-              <option value="">دکل مقصد</option>
-              {rigs.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <input className="input" placeholder="نام درخواست‌کننده" value={requester} onChange={(e) => setRequester(e.target.value)} />
-            <input className="input" placeholder="نام بازرس" value={inspector} onChange={(e) => setInspector(e.target.value)} />
-          </div>
-
-          <div className="row">
-            <DatePicker
-              value={inspectAtObj}
-              onChange={setInspectAtObj}
-              calendar={persian}
-              locale={persian_fa}
-              format={faFmt}
-              plugins={[<TimePicker position="bottom" />]}
-              inputClass="input"
-              containerClassName="rmdp-rtl"
-              placeholder="تاریخ بازرسی"
-            />
-            <div className="col" />
-            <div className="col" />
-          </div>
-
-          <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e) => setNote(e.target.value)} />
+          <footer className="modal__ftr">
+            <button className="btn" onClick={onClose}>انصراف</button>
+            <button className="btn warn" onClick={submit} disabled={hasError}>ثبت دکل به دکل</button>
+          </footer>
         </div>
-
-        <footer className="modal__ftr">
-          <button className="btn" onClick={onClose}>انصراف</button>
-          <button className="btn warn" onClick={submit} disabled={hasError}>ثبت دکل به دکل</button>
-        </footer>
       </div>
-    </div>
+
+      <ItemPickerModal
+        open={pickOpen}
+        onClose={() => setPickOpen(false)}
+        catalog={catalog}
+        onPick={(it) => {
+          setName(it.name);
+          setCode(it.code);
+          setPickOpen(false);
+        }}
+      />
+    </>
   );
 }

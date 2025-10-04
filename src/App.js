@@ -6,6 +6,7 @@ import InOut from './Components/InOut';
 import Turning from './Components/Turning';
 
 
+
 import Request from "./Components/Request";    
 import "./App.css";
 
@@ -32,6 +33,8 @@ export default function App(){
           <Route path="/maintenance/inout" element={<InOut />} />
           <Route path="/maintenance/request" element={<Request />} />
           <Route path="/maintenance/turning" element={<Turning />} />
+          
+
           <Route path="*" element={<h1>صفحهٔ موردنظر یافت نشد!</h1>} />
         </Routes>
       </main>

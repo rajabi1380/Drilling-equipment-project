@@ -1,3 +1,4 @@
+// src/Components/Sidebar.js
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
@@ -20,7 +21,7 @@ export default function Sidebar({ open, onClose }) {
         </header>
 
         <nav className="sb-menu">
-          {/* نمونه‌های غیرمسیر (در صورت نیاز بعداً به NavLink تبدیل کن) */}
+          {/* نمونه‌های غیرمسیر */}
           <button className="sb-item" type="button">درون چاهی</button>
           <button className="sb-item" type="button">برون چاهی</button>
 
@@ -55,18 +56,28 @@ export default function Sidebar({ open, onClose }) {
               >
                 ثبت درخواست
               </NavLink>
+
+              {/* 👇 جدید: صفحه گزارشات */}
+              <NavLink
+                to="/maintenance/reports"
+                className={({ isActive }) => "sb-subitem" + (isActive ? " is-active" : "")}
+                onClick={onClose}
+                end
+              >
+                گزارشات
+              </NavLink>
             </div>
           )}
 
           {/* بازرسی (فعلاً دکمه ساده) */}
           <button className="sb-item" type="button">بازرسی</button>
 
-          {/* تراشکاری → NavLink تا صفحه باز شود */}
+          {/* تراشکاری */}
           <NavLink
             to="/maintenance/turning"
-              className={({ isActive }) => "sb-subitem" + (isActive ? " is-active" : "")}
-                onClick={onClose}
-                end
+            className={({ isActive }) => "sb-subitem" + (isActive ? " is-active" : "")}
+            onClick={onClose}
+            end
           >
             تراشکاری
           </NavLink>
