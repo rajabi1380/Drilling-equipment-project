@@ -1,17 +1,20 @@
 // src/utils/date.js
-import ReactDatePicker from "react-multi-date-picker";
+import RMDatePicker from "react-multi-date-picker";
+import TimePickerPlugin from "react-multi-date-picker/plugins/time_picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import TimePickerPlugin from "react-multi-date-picker/plugins/time_picker";
 
-// قالب نمایشی مشترک
+export const DatePicker = RMDatePicker;
+export const TimePicker = TimePickerPlugin;
+export { persian, persian_fa };
+
 export const faFmt = "YYYY/MM/DD HH:mm";
 
-// تبدیل DateObject (از react-multi-date-picker) به ISO yyyy-mm-ddThh:mm
-export const toISO16 = (dObj) => (dObj ? new Date(dObj.toDate()).toISOString().slice(0, 16) : "");
+export function toISO16(dObj) {
+  return dObj ? new Date(dObj.toDate()).toISOString().slice(0, 16) : "";
+}
 
-// نمایش تاریخ/ساعت میلادی ذخیره‌شده (ISO) به شمسی-فارسی
-export const fmtFa = (iso) => {
+export function fmtFa(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   const fmt = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
@@ -22,9 +25,4 @@ export const fmtFa = (iso) => {
     minute: "2-digit",
   });
   return fmt.format(d).replace(",", "");
-};
-
-// ری‌اکسپورت‌ها برای یک‌دست‌بودن ایمپورت‌ها
-export const DatePicker = ReactDatePicker;
-export const TimePicker = TimePickerPlugin;
-export { persian, persian_fa };
+}
