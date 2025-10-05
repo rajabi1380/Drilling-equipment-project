@@ -1,42 +1,93 @@
+/* src/styles/Calendar.css
+   استایل اختصاصی تقویم؛ سازگار با متغیرهای base.css
+*/
+
 :root{
-  --line:#e5e7eb; --muted:#f3f4f6; --text:#111827; --sub:#6b7280; --accent:#1f8cff;
-  --holiday:#ffe8ea; /* پس‌زمینه‌ی تعطیلات */
+  --holiday:#ffe8ea; /* پس‌زمینه‌ی روزهای تعطیل */
 }
 
 .cal{
+  background:#fff;
   border:1px solid var(--line);
   border-radius:12px;
   padding:10px;
-  background:#fff;
-  min-width: 260px;
+  min-width:260px;
 }
-.cal--compact{ min-width: 0; } /* برای Navbar */
+.cal--compact{ min-width:0; } /* برای استفاده در Navbar یا فضاهای کوچک */
 
+/* هدر */
 .cal__hdr{
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:6px;
 }
 .cal__title{ font-size:13px; color:var(--text); font-weight:600; }
 .cal__nav{
-  width:28px; height:28px; border:1px solid var(--line); background:#fff; border-radius:8px;
+  width:28px; height:28px;
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:8px;
   cursor:pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.cal__nav:hover{ background:var(--muted); }
+.cal__nav:focus-visible{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(31,140,255,.15);
 }
 
+/* گرید روزها */
 .cal__grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; }
 .cal__week{ margin-bottom:4px; }
 .cal__w{ text-align:center; font-size:12px; color:var(--sub); }
 
+/* سلول روز */
 .cal__d{
   text-align:center; font-size:12px; padding:6px 0;
-  border:1px dashed var(--line); border-radius:8px; background:#fff;
-  cursor:pointer; transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  border:1px dashed var(--line);
+  border-radius:8px; background:#fff;
+  cursor:pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
-.cal__d:hover{ background: var(--muted); }
-.cal__d.is-today{ background: var(--muted); border-color:#cfe3ff; }
-.cal__d.is-selected{ border-style: solid; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31,140,255,.12); }
-.cal__d.is-holiday{ background: var(--holiday); }
+.cal__d:hover{ background:var(--muted); }
+.cal__d:focus-visible{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(31,140,255,.12);
+}
+.cal__d.is-today{
+  background:var(--muted);
+  border-color:#cfe3ff;
+}
+.cal__d.is-selected{
+  border-style:solid;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(31,140,255,.12);
+}
+.cal__d.is-holiday{
+  background:var(--holiday);
+}
 
-.cal__footer{ display:flex; justify-content:flex-end; margin-top:6px; }
+/* فوتر */
+.cal__footer{
+  display:flex; justify-content:flex-end; margin-top:6px;
+}
 .cal__btn{
-  border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 10px; cursor:pointer;
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:8px;
+  padding:6px 10px;
+  cursor:pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.cal__btn:hover{ background:var(--muted); }
+.cal__btn:focus-visible{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(31,140,255,.12);
+}
+
+/* احترام به کاهش موشن */
+@media (prefers-reduced-motion: reduce){
+  .cal__nav, .cal__d, .cal__btn{ transition:none; }
 }

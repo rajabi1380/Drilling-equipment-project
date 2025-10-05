@@ -1,131 +1,67 @@
-:root{
-  --panel:#fff; --line:#e5e7eb; --muted:#f3f4f6; --text:#111827; --sub:#6b7280;
-  --accent:#1f8cff; --success:#10b981; --danger:#ef4444; --warn:#f59e0b;
-  --in-bg:#ecfdf5;  /* سبز ملایم برای ورود */
-  --out-bg:#fef2f2; /* قرمز ملایم برای خروج */
+/* ===== صفحه ===== */
+.io-page{ padding:16px; }
+.io-card{
+  background:#fff; border:1px solid var(--line);
+  border-radius:12px; padding:12px;
 }
 
-/* صفحه و کارت */
-.io-page{ padding:8px; }
-.io-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px; box-shadow:0 2px 10px rgba(0,0,0,.03); }
-
-/* تب‌ها */
-.tabs{ display:flex; align-items:center; gap:8px; margin:8px 0 6px; }
-.tab{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 12px; cursor:pointer; }
+/* ===== تب‌ها ===== */
+.tabs{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.tab{
+  padding:8px 12px; border-radius:10px; border:1px solid var(--line); background:#fff; cursor:pointer;
+  transition: background .15s, border-color .15s;
+}
+.tab:hover{ background:#f9fafb; }
 .tab.is-active{ background:#eef2ff; border-color:#c7d2fe; }
-.divider{ color:#9ca3af; }
+.divider{ color:var(--sub); user-select:none; }
 
-/* فیلتر مشترک */
-.io-filter{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:10px; }
-.io-filter__fields{ display:grid; gap:10px; grid-template-columns: 220px 180px 220px 220px 140px; }
-.io-filter__actions{ display:flex; gap:8px; }
-.f-item{ display:flex; flex-direction:column; gap:6px; }
-.f-item label{ font-size:12px; color:#6b7280; }
-.input{ height:36px; border:1px solid var(--line); border-radius:10px; padding:0 10px; background:#fff; font-size:14px; }
-.input.err{ border-color: var(--danger); }
-.err-msg{ color: var(--danger); font-size: 12px; margin-top:4px; }
-.btnrow{ display:flex; gap:8px; }
-.f-apply{ align-self:end; }
+/* ===== فیلتر مشترک ===== */
+.io-filter{ border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:10px; background:#fff; }
+.io-filter__fields{
+  display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:10px;
+}
+.io-filter__fields .f-item label{ display:block; font-size:12px; color:var(--sub); margin-bottom:4px; }
+.io-filter__fields .f-apply .btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
+.io-filter__actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
 
-/* دکمه‌ها */
-.btn{ appearance:none; border:1px solid var(--line); background:#fff; color:var(--text); border-radius:10px; padding:8px 12px; cursor:pointer; transition:.15s; }
-.btn:hover{ background:var(--muted); }
-.btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
-.btn.success{ background:var(--success); color:#fff; border-color:var(--success); }
-.btn.danger{ background:var(--danger); color:#fff; border-color:var(--danger); }
-.btn.warn{ background:var(--warn); color:#fff; border-color:var(--warn); }
-.btn.ghost{ background:#fff; border-style:dashed; }
-
-/* جدول‌ها */
-.table-toolbar{ display:flex; justify-content:flex-start; padding:8px 0; }
-.table-wrap{ overflow:auto; border:1px solid var(--line); border-radius:12px; }
-table{ width:100%; border-collapse:separate; border-spacing:0; }
-thead th{ background:var(--muted); color:var(--sub); font-weight:700; font-size:13px; text-align:right; padding:10px; border-bottom:1px solid var(--line); position:sticky; top:0; }
-tbody td{ padding:12px 10px; border-bottom:1px solid var(--line); font-size:14px; }
-tbody tr:hover{ background:#fafafa; }
-.muted{ color:var(--sub); }
-.empty{ text-align:center; color:#6b7280; padding:16px; }
-
-/* رنگ ردیف‌ها */
-.row-in{ background:var(--in-bg); }
-.row-out{ background:var(--out-bg); }
-.row-rig{ background:#fff7ed; }       /* amber-50 */
-.row-low{ background:#fff1f2; }        /* برای موجودی کم */
-
-/* نشانگر تعداد */
-.qty-badge{ display:inline-block; min-width:28px; text-align:center; padding:4px 8px; border-radius:999px; background:#eef2ff; border:1px solid #c7d2fe; font-weight:600; }
-.qty-badge.is-low{ background:#fee2e2; border-color:#fecaca; }
-
-/* صفحه‌بندی */
-.pagi{ display:flex; gap:6px; align-items:center; margin-top:8px; flex-wrap:wrap; }
-.total-stock{ margin-top:10px; font-weight:600; }
-
-/* نوتیفیکیشن */
-.alert{ border:1px solid #fde68a; background:#fffbeb; padding:10px; border-radius:10px; margin-bottom:10px; }
-.alert.warn{ border-color:#f59e0b; }
+/* ===== هشدار کمبود موجودی ===== */
+.alert.warn{
+  background:#fff7ed; border:1px solid #fed7aa; color:#9a3412;
+  border-radius:10px; padding:8px 10px; margin-bottom:10px;
+}
 .alert-title{ font-weight:700; margin-bottom:4px; }
 .alert-body{ display:flex; gap:6px; flex-wrap:wrap; }
-.badge{ background:#fff; border:1px solid var(--line); padding:4px 8px; border-radius:999px; }
-
-/* مودال‌ها */
-.modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:grid; place-items:center; z-index:1000; }
-.modal{ width:min(780px,92vw); background:#fff; border:1px solid var(--line); border-radius:16px; padding:12px; box-shadow:0 20px 35px rgba(0,0,0,.15); max-height:90vh; overflow:auto; }
-.modal--small{ width:min(520px,92vw); }
-.modal__hdr{ display:flex; align-items:center; justify-content:space-between; padding:6px 4px; }
-.modal__title{ font-weight:700; }
-.modal__close{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:6px 10px; cursor:pointer; }
-.modal__ftr{ display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
-.form{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
-.row{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:8px; }
-.col{ display:flex; flex-direction:column; gap:4px; }
-textarea{ min-height:72px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
-
-/* فیلد + دکمه انتخاب */
-.with-pick{ position:relative; display:flex; gap:6px; align-items:center; }
-.pick-btn{
-  border:1px dashed #d1d5db; background:#fff;
-  border-radius:8px; padding:6px 8px; cursor:pointer; line-height:1;
+.badge{
+  display:inline-block; padding:4px 8px; border-radius:999px;
+  background:#ffedd5; border:1px solid #fed7aa; font-size:12px;
 }
-.pick-btn:hover{ background:#f9fafb; }
 
-/* مدال انتخاب قطعه */
-.picker{ display:flex; flex-direction:column; gap:8px; }
-.picker-list{ max-height:320px; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:6px; }
-.picker-row{ display:flex; align-items:center; gap:10px; padding:6px 8px; border-bottom:1px dashed #f1f5f9; }
-.picker-row:last-child{ border-bottom:none; }
-.picker-name{ font-weight:600; }
-.picker-code{ color:#6b7280; }
-
-/* ریسپانسیو */
-@media (max-width:1100px){ .io-filter__fields{ grid-template-columns: 1fr 1fr; } }
-@media (max-width:640px){
-  .io-filter__fields{ grid-template-columns: 1fr; }
-  .io-filter{ align-items:stretch; }
-  .row{ grid-template-columns: 1fr; }
-  thead{ display:none; }
-  tbody td{ display:block; border-bottom:none; }
-  tbody tr{ display:block; border-bottom:1px solid var(--line); }
-}
-/* گروه خروجی‌ها در نوار ابزار */
-.table-toolbar{
-  display:flex; align-items:center; gap:8px; padding:8px 0;
-}
+/* ===== ابزار جدول ===== */
+.table-toolbar{ display:flex; align-items:center; gap:8px; margin:6px 0 8px; }
 .export-group{ display:flex; gap:8px; }
 
-/* مودال کوچک پیکر */
-.modal.modal--small{ width:min(520px, 92vw); }
-.with-pick{ position:relative; }
-.pick-btn{
-  position:absolute; inset-inline-end:6px; inset-block-start:6px;
-  border:1px solid var(--line,#e5e7eb); background:#fff; border-radius:8px;
-  padding:4px 8px; cursor:pointer;
+/* ===== برچسب تعداد و کمبود ===== */
+.qty-badge{
+  display:inline-block; min-width:28px; text-align:center;
+  padding:4px 8px; border-radius:999px; background:#f3f4f6; font-weight:600;
 }
-.picker{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
-.picker-list{ max-height:320px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px; }
-.picker-row{
-  display:grid; grid-template-columns: 28px 1fr auto; gap:8px;
-  align-items:center; padding:8px 10px; border-bottom:1px solid #f1f5f9;
+.qty-badge.is-low{ background:#fee2e2; }
+
+/* ===== علامت کمبود برای سطر موجودی ===== */
+.row-low td{ background:#fff7f7; }
+
+/* ===== رنگ ردیف‌های تب ورود/خروج و دکل‌به‌دکل ===== */
+.row-in  td{ background:#f8fff7; }
+.row-out td{ background:#fff8f8; }
+.row-rig td{ background:#f8fafc; }
+
+/* ===== جمع کل ===== */
+.total-stock{ margin-top:10px; font-weight:600; }
+
+/* ===== ریسپانسیو ===== */
+@media (max-width: 900px){
+  .io-filter__fields{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+  thead{ display:none; }
+  tbody td{ display:block; border-top:none; padding:8px 10px; }
+  tbody tr{ display:block; border-top:1px solid var(--line); }
 }
-.picker-row:last-child{ border-bottom:0; }
-.picker-name{ font-weight:600; }
-.picker-code{ color:#6b7280; font-size:13px; }

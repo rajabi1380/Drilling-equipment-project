@@ -1,11 +1,4 @@
-:root{
-  --panel:#fff;
-  --line:#e5e7eb;
-  --muted:#f3f4f6;
-  --text:#111827;
-  --sub:#6b7280;
-  --accent:#1f8cff; /* برای حالت active نرم */
-}
+/* src/Components/Sidebar.css */
 
 /* بک‌دراپ وقتی سایدبار باز است */
 .sb-backdrop{
@@ -17,7 +10,7 @@
 /* سایدبار: ثابت سمت راست — پیش‌فرض بسته */
 .sidebar{
   position: fixed;
-  top: 0; bottom: 0; right: 0;   /* دقیقا سمت راست */
+  top: 0; bottom: 0; right: 0;
   width: 300px; max-width: 90vw;
   background: var(--panel);
   border-left: 1px solid var(--line);
@@ -31,12 +24,14 @@
 }
 .sidebar.is-open{ transform: translateX(0); }
 
+/* هدر سایدبار */
 .sb-header{
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:8px;
 }
 .sb-close{
-  border:1px solid var(--line); background:#fff; border-radius:10px;
+  border:1px solid var(--line); background:#fff; color:var(--text);
+  border-radius:10px;
   padding:6px 10px; cursor:pointer;
 }
 
@@ -57,7 +52,7 @@ a.sb-item{
 a.sb-item:hover{ background:var(--muted); }
 .chev{ color:var(--sub); }
 
-/* زیرمنو: چینش ستونی با فاصله */
+/* زیرمنو */
 .sb-sub{
   display:flex; flex-direction:column;
   gap:8px;
@@ -83,7 +78,7 @@ a.sb-item:hover{ background:var(--muted); }
 .sb-subitem:focus-visible{
   outline:none;
   border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(31,140,255,.15);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 /* حالت active وقتی همان مسیر باز است (NavLink کلاس is-active می‌دهد) */
 .sb-subitem.is-active{
@@ -95,8 +90,8 @@ a.sb-item:hover{ background:var(--muted); }
 /* فوتر */
 .sb-footer{ margin-top:auto; padding-top:8px; color:var(--sub); }
 
-/* ورودی‌ها راست‌به‌چپ */
-[dir="rtl"] input{ direction: rtl; }
+/* ورودی‌ها راست‌به‌چپ (فقط در سایدبار در صورت نیاز) */
+[dir="rtl"] .sidebar input{ direction: rtl; }
 
 /* ریسپانسیو */
 @media (max-width: 480px){

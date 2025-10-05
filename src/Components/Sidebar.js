@@ -4,11 +4,14 @@ import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 
 export default function Sidebar({ open, onClose }) {
-  const [expandMaint, setExpandMaint] = useState(true);
+  const [expandDownhole, setExpandDownhole] = useState(true);   // درون‌چاهی
+  const [expandSurface, setExpandSurface]   = useState(false);  // برون‌چاهی
+  const [expandMaint, setExpandMaint]       = useState(true);   // تعمیرات لوله
 
   return (
     <>
       {open && <div className="sb-backdrop" onClick={onClose} />}
+
       <aside
         className={`sidebar ${open ? "is-open" : ""}`}
         dir="rtl"
@@ -17,15 +20,100 @@ export default function Sidebar({ open, onClose }) {
       >
         <header className="sb-header">
           <b>منو</b>
-          <button className="sb-close" onClick={onClose} aria-label="بستن">✕</button>
+          <button className="sb-close" onClick={onClose} aria-label="بستن">
+            ✕
+          </button>
         </header>
 
         <nav className="sb-menu">
-          {/* نمونه‌های غیرمسیر */}
-          <button className="sb-item" type="button">درون چاهی</button>
-          <button className="sb-item" type="button">برون چاهی</button>
 
-          {/* گروه تعمیرات و نگهداری لوله با زیرمنو */}
+          {/* === درون‌چاهی === */}
+          <button
+            className="sb-item"
+            type="button"
+            onClick={() => setExpandDownhole(v => !v)}
+            aria-expanded={expandDownhole}
+            aria-controls="downhole-sub"
+          >
+برون‌چاهی            <span className="chev">{expandDownhole ? "▾" : "▸"}</span>
+          </button>
+
+          {expandDownhole && (
+            <div className="sb-sub" id="downhole-sub">
+              <NavLink
+                to="/downhole/inout"
+                className={({ isActive }) =>
+                  "sb-subitem" + (isActive ? " is-active" : "")
+                }
+                onClick={onClose}
+                end
+              >
+                ورود و خروج
+              </NavLink>
+
+              <NavLink
+                to="/downhole/repair"
+                className={({ isActive }) =>
+                  "sb-subitem" + (isActive ? " is-active" : "")
+                }
+                onClick={onClose}
+                end
+              >
+                تعمیرات
+              </NavLink>
+            </div>
+          )}
+
+          {/* === برون‌چاهی (Surface) — برگردونده شد === */}
+           { <button
+            className="sb-item"
+            type="button"
+            onClick={() => setExpandSurface(v => !v)}
+            aria-expanded={expandSurface}
+            aria-controls="surface-sub"
+          >
+درون‌چاهی            <span className="chev">{expandSurface ? "▾" : "▸"}</span>
+          </button> }
+
+          {/* {expandSurface && (
+            <div className="sb-sub" id="surface-sub">
+              <NavLink
+                to="/surface/inout"
+                className={({ isActive }) =>
+                  "sb-subitem" + (isActive ? " is-active" : "")
+                }
+                onClick={onClose}
+                end
+              >
+                ورود و خروج
+              </NavLink>
+
+              <NavLink
+                to="/surface/repair"
+                className={({ isActive }) =>
+                  "sb-subitem" + (isActive ? " is-active" : "")
+                }
+                onClick={onClose}
+                end
+              >
+                تعمیرات
+              </NavLink>
+            </div>
+          )}  */}
+
+          {/* === گروه‌های عملیاتی (گلوبال) — بدون زیرمنو === */}
+          <NavLink
+            to="/ops/groups"
+            className={({ isActive }) =>
+              "sb-subitem" + (isActive ? " is-active" : "")
+            }
+            onClick={onClose}
+            end
+          >
+            گروه‌های عملیاتی
+          </NavLink>
+
+          {/* === تعمیرات و نگهداری لوله === */}
           <button
             className="sb-item"
             type="button"
@@ -41,7 +129,9 @@ export default function Sidebar({ open, onClose }) {
             <div className="sb-sub" id="maint-sub">
               <NavLink
                 to="/maintenance/inout"
-                className={({ isActive }) => "sb-subitem" + (isActive ? " is-active" : "")}
+                className={({ isActive }) =>
+                  "sb-subitem" + (isActive ? " is-active" : "")
+                }
                 onClick={onClose}
                 end
               >
@@ -50,37 +140,38 @@ export default function Sidebar({ open, onClose }) {
 
               <NavLink
                 to="/maintenance/request"
-                className={({ isActive }) => "sb-subitem" + (isActive ? " is-active" : "")}
+                className={({ isActive }) =>
+                  "sb-subitem" + (isActive ? " is-active" : "")
+                }
                 onClick={onClose}
                 end
               >
                 ثبت درخواست
               </NavLink>
 
-              {/* 👇 جدید: صفحه گزارشات */}
               <NavLink
                 to="/maintenance/reports"
-                className={({ isActive }) => "sb-subitem" + (isActive ? " is-active" : "")}
+                className={({ isActive }) =>
+                  "sb-subitem" + (isActive ? " is-active" : "")
+                }
                 onClick={onClose}
                 end
               >
                 گزارشات
               </NavLink>
+
+              <NavLink
+                to="/maintenance/turning"
+                className={({ isActive }) =>
+                  "sb-subitem" + (isActive ? " is-active" : "")
+                }
+                onClick={onClose}
+                end
+              >
+                تراشکاری
+              </NavLink>
             </div>
           )}
-
-          {/* بازرسی (فعلاً دکمه ساده) */}
-          <button className="sb-item" type="button">بازرسی</button>
-
-          {/* تراشکاری */}
-          <NavLink
-            to="/maintenance/turning"
-            className={({ isActive }) => "sb-subitem" + (isActive ? " is-active" : "")}
-            onClick={onClose}
-            end
-          >
-            تراشکاری
-          </NavLink>
         </nav>
 
         <footer className="sb-footer">

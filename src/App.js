@@ -4,7 +4,11 @@ import Navbar from "./Components/Navbar";
 import Sidebar from "./Components/Sidebar";
 import InOut from './Components/InOut';
 import Turning from './Components/Turning';
+import DownholeInOut from './Components/DownholeInOut';
+import DownholeRepair from './Components/DownholeRepair';
 
+// src/App.jsx
+import "./styles/base.css";
 
 
 import Request from "./Components/Request";    
@@ -33,7 +37,9 @@ export default function App(){
           <Route path="/maintenance/inout" element={<InOut />} />
           <Route path="/maintenance/request" element={<Request />} />
           <Route path="/maintenance/turning" element={<Turning />} />
-          
+          <Route path="/downhole/inout" element={<DownholeInOut/>} />
+          <Route path="/downhole/repair" element={<DownholeRepair/>} />
+
 
           <Route path="*" element={<h1>صفحهٔ موردنظر یافت نشد!</h1>} />
         </Routes>
