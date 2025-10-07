@@ -35,7 +35,7 @@ export default function Sidebar({ open, onClose }) {
             aria-expanded={expandDownhole}
             aria-controls="downhole-sub"
           >
-برون‌چاهی            <span className="chev">{expandDownhole ? "▾" : "▸"}</span>
+درون چاهی            <span className="chev">{expandDownhole ? "▾" : "▸"}</span>
           </button>
 
           {expandDownhole && (
@@ -48,10 +48,10 @@ export default function Sidebar({ open, onClose }) {
                 onClick={onClose}
                 end
               >
-                ورود و خروج
-              </NavLink>
+رسید و ارسال              </NavLink>
 
-              <NavLink
+             
+                 <NavLink
                 to="/downhole/repair"
                 className={({ isActive }) =>
                   "sb-subitem" + (isActive ? " is-active" : "")
@@ -59,7 +59,7 @@ export default function Sidebar({ open, onClose }) {
                 onClick={onClose}
                 end
               >
-                تعمیرات
+                گروه های عملیاتی
               </NavLink>
             </div>
           )}
@@ -72,46 +72,11 @@ export default function Sidebar({ open, onClose }) {
             aria-expanded={expandSurface}
             aria-controls="surface-sub"
           >
-درون‌چاهی            <span className="chev">{expandSurface ? "▾" : "▸"}</span>
+برون چاهی            <span className="chev">{expandSurface ? "▾" : "▸"}</span>
           </button> }
 
-          {/* {expandSurface && (
-            <div className="sb-sub" id="surface-sub">
-              <NavLink
-                to="/surface/inout"
-                className={({ isActive }) =>
-                  "sb-subitem" + (isActive ? " is-active" : "")
-                }
-                onClick={onClose}
-                end
-              >
-                ورود و خروج
-              </NavLink>
-
-              <NavLink
-                to="/surface/repair"
-                className={({ isActive }) =>
-                  "sb-subitem" + (isActive ? " is-active" : "")
-                }
-                onClick={onClose}
-                end
-              >
-                تعمیرات
-              </NavLink>
-            </div>
-          )}  */}
-
-          {/* === گروه‌های عملیاتی (گلوبال) — بدون زیرمنو === */}
-          <NavLink
-            to="/ops/groups"
-            className={({ isActive }) =>
-              "sb-subitem" + (isActive ? " is-active" : "")
-            }
-            onClick={onClose}
-            end
-          >
-            گروه‌های عملیاتی
-          </NavLink>
+         
+        
 
           {/* === تعمیرات و نگهداری لوله === */}
           <button
@@ -135,8 +100,7 @@ export default function Sidebar({ open, onClose }) {
                 onClick={onClose}
                 end
               >
-                ورود و خروج
-              </NavLink>
+رسید و ارسال              </NavLink>
 
               <NavLink
                 to="/maintenance/request"
@@ -149,7 +113,10 @@ export default function Sidebar({ open, onClose }) {
                 ثبت درخواست
               </NavLink>
 
-              <NavLink
+           
+            </div>
+          )}
+             <NavLink
                 to="/maintenance/reports"
                 className={({ isActive }) =>
                   "sb-subitem" + (isActive ? " is-active" : "")
@@ -170,8 +137,6 @@ export default function Sidebar({ open, onClose }) {
               >
                 تراشکاری
               </NavLink>
-            </div>
-          )}
         </nav>
 
         <footer className="sb-footer">
