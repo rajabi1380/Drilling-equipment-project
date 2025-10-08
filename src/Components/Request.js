@@ -5,10 +5,13 @@ import "./Request.css";
 import { loadLS, saveLS } from "../utils/ls";
 import { DatePicker, TimePicker, persian, persian_fa, faFmt, fmtFa, toISO16 } from "../utils/date";
 import Pagination from "./common/Pagination";
-import ItemPickerModal from "./common/ItemPickerModal";
 import ExportButtons from "./common/ExportButtons";
 import { exportCSV, exportDOC } from "../utils/export";
 import { getCatalogForUnit } from "../constants/catalog";
+
+// توجه: مسیرها مطابق ساختار شما با M بزرگ
+import RequestModal from "./Modals/RequestModal";
+import HistoryModal from "./Modals/HistoryModal";
 
 /* کلید ذخیره‌سازی محلی */
 const LS_KEY = "requests_v1";
@@ -23,7 +26,7 @@ const makeOrderNo = (type, seq = 1) => {
   return `${PREFIX[type] || "WO"}-${y}${m}${day}-${String(seq).padStart(3, "0")}`;
 };
 
-/* واحدهایی که از کاتالوگ می‌گیریم (در صورت داشتن واحدهای بیشتر، این آرایه را به‌روزرسانی کن) */
+/* واحدهایی که از کاتالوگ می‌گیریم */
 const UNIT_IDS = ["surface", "bop", "choke"];
 
 export default function Request() {
@@ -75,17 +78,16 @@ export default function Request() {
   const totalArcPages = Math.max(1, Math.ceil(archivedOrders.length / PAGE));
   const arcSlice = archivedOrders.slice((pageArc - 1) * PAGE, pageArc * PAGE);
 
-  /* ---------- UI state ---------- */
+  /* ---------- UI ---------- */
   const [showOpenTable, setShowOpenTable] = useState(true);
   const [showArcTable, setShowArcTable] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [historyTarget, setHistoryTarget] = useState(null);
 
-  /* ---------- کاتالوگ تجمیع‌شده (آرایه) برای مودال ---------- */
+  /* ---------- کاتالوگ تجمیع‌شده ---------- */
   const fullCatalog = useMemo(() => {
     try {
       const all = UNIT_IDS.flatMap((u) => getCatalogForUnit?.(u) || []);
-      // حذف آیتم‌های undefined/null و دابل‌ها بر اساس code+name
       const key = (x) => `${x?.code || ""}__${x?.name || ""}`;
       const map = new Map();
       for (const it of all) {
@@ -99,10 +101,8 @@ export default function Request() {
 
   /* ---------- Actions ---------- */
   const onCreate = (payload) => {
-    // اول شمارهٔ فعلی را استفاده می‌کنیم، بعد seq را افزایش می‌دهیم
     const orderNo = makeOrderNo(payload.reqType, seq);
     const newSeq = seq + 1;
-
     const base = {
       id: Date.now(),
       orderNo,
@@ -115,9 +115,9 @@ export default function Request() {
       startISO: toISO16(payload.startObj),
       endISO: toISO16(payload.endObj),
       desc: payload.desc || "",
+      ...(payload.extra || {}),
     };
-
-    setOpenOrders((prev) => [{ ...base, ...(payload.extra || {}) }, ...prev]);
+    setOpenOrders((prev) => [base, ...prev]);
     setSeq(newSeq);
     setShowModal(false);
     setShowOpenTable(true);
@@ -134,7 +134,7 @@ export default function Request() {
     });
   };
 
-  /* ===== Export helpers (open/archived) ===== */
+  /* ===== Export helpers ===== */
   const buildRows = (items) =>
     items.map((r) => ({
       "شماره دستورکار": r.orderNo,
@@ -147,7 +147,6 @@ export default function Request() {
       "نوع درخواست": (r.reqType || "").toUpperCase(),
       "توضیحات": r.desc || "—",
     }));
-
   const safeHeaders = (rows) =>
     Object.keys(
       rows[0] || {
@@ -189,6 +188,15 @@ export default function Request() {
       rows
     );
   };
+
+  /* ===== تاریخچه برای HistoryModal ===== */
+  const historyRows = useMemo(() => {
+    if (!historyTarget?.code) return [];
+    const all = [...openOrders, ...archivedOrders];
+    return all
+      .filter((x) => (x.code || "") === (historyTarget.code || ""))
+      .sort((a, b) => (a.startISO || "").localeCompare(b.startISO || ""));
+  }, [historyTarget, openOrders, archivedOrders]);
 
   return (
     <div className="rq-page" dir="rtl">
@@ -399,280 +407,19 @@ export default function Request() {
         </section>
       </div>
 
-      {showModal && (
-        <RequestModal
-          onClose={() => setShowModal(false)}
-          onSubmit={onCreate}
-          catalog={fullCatalog} // ← آرایه آماده برای ItemPickerModal
-        />
-      )}
-
-      {historyTarget && <HistoryModal target={historyTarget} onClose={() => setHistoryTarget(null)} />}
-    </div>
-  );
-}
-
-/* ====== Modal: انتخاب قطعه ====== */
-function RequestModal({ onClose, onSubmit, catalog }) {
-  const [tab, setTab] = useState("turning"); // turning | inspection
-  const [reqType, setReqType] = useState("wo"); // wo | pm | ed
-
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [size, setSize] = useState("");
-  const [unit, setUnit] = useState("تراشکاری");
-  const status = tab === "inspection" ? "در انتظار بازرسی" : "در انتظار تعمیر";
-  useEffect(() => setUnit(tab === "inspection" ? "بازرسی" : "تراشکاری"), [tab]);
-
-  const [startObj, setStartObj] = useState(null);
-  const [endObj, setEndObj] = useState(null);
-  const [desc, setDesc] = useState("");
-  const [failureName, setFailureName] = useState("");
-  const [failureCode, setFailureCode] = useState("");
-  const [pickOpen, setPickOpen] = useState(false);
-
-  const touched = { name: !name.trim(), code: !code.trim(), size: !size.trim() };
-  const invalid = touched.name || touched.code || touched.size;
-
-  const submit = () => {
-    if (invalid) return;
-    const payload = { reqType, name, code, size, unit, status, startObj, endObj, desc, extra: {} };
-    if (tab === "turning") payload.extra = { failureName, failureCode };
-    onSubmit(payload);
-  };
-
-  return (
-    <>
-      <div className="rq-backdrop" onClick={onClose}>
-        <div className="rq-modal" dir="rtl" onClick={(e) => e.stopPropagation()}>
-          <header className="rq-modal__hdr">
-            <b>جزئیات درخواست</b>
-            <button className="rq-close" onClick={onClose}>
-              ✕
-            </button>
-          </header>
-
-          <div className="rq-type">
-            <span>نوع درخواست:</span>
-            <div className="rq-type__grp">
-              {["wo", "pm", "ed"].map((t) => (
-                <button
-                  key={t}
-                  className={`btn chip ${reqType === t ? "primary" : ""}`}
-                  onClick={() => setReqType(t)}
-                  type="button"
-                >
-                  {t.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="rq-tabs">
-            <button className={`tab ${tab === "turning" ? "is-active" : ""}`} onClick={() => setTab("turning")}>
-              تراشکاری
-            </button>
-            <button className={`tab ${tab === "inspection" ? "is-active" : ""}`} onClick={() => setTab("inspection")}>
-              بازرسی
-            </button>
-          </div>
-
-          <div className="form">
-            <div className="row">
-              <div className="col">
-                <div className="with-pick">
-                  <input
-                    className={`input ${touched.name ? "err" : ""}`}
-                    placeholder="* نام تجهیز"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                {touched.name && <small className="err-msg">الزامی</small>}
-              </div>
-              <div className="col">
-                <div className="with-pick">
-                  <input
-                    className={`input ${touched.code ? "err" : ""}`}
-                    placeholder="* کد تجهیز"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                  />
-                  {/* دکمه انتخاب از کاتالوگ */}
-                  <button type="button" className="pick-btn" title="انتخاب از لیست" onClick={() => setPickOpen(true)}>
-                    ☝️
-                  </button>
-                </div>
-                {touched.code && <small className="err-msg">الزامی</small>}
-              </div>
-              <div className="col">
-                <input
-                  className={`input ${touched.size ? "err" : ""}`}
-                  placeholder="* سایز"
-                  value={size}
-                  onChange={(e) => setSize(e.target.value)}
-                />
-                {touched.size && <small className="err-msg">الزامی</small>}
-              </div>
-            </div>
-
-            <div className="row">
-              <input className="input" value={unit} readOnly disabled />
-              <input className="input" value={status} readOnly disabled />
-              <DatePicker
-                value={startObj}
-                onChange={setStartObj}
-                calendar={persian}
-                locale={persian_fa}
-                format={faFmt}
-                plugins={[<TimePicker position="bottom" />]}
-                inputClass="input"
-                containerClassName="rmdp-rtl"
-                placeholder="تاریخ درخواست/شروع"
-              />
-            </div>
-
-            <div className="row">
-              <DatePicker
-                value={endObj}
-                onChange={setEndObj}
-                calendar={persian}
-                locale={persian_fa}
-                format={faFmt}
-                plugins={[<TimePicker position="bottom" />]}
-                inputClass="input"
-                containerClassName="rmdp-rtl"
-                placeholder="تاریخ پایان عملیات"
-              />
-            </div>
-
-            {tab === "turning" && (
-              <div className="row">
-                <input
-                  className="input"
-                  placeholder="نام خرابی"
-                  value={failureName}
-                  onChange={(e) => setFailureName(e.target.value)}
-                />
-                <input
-                  className="input"
-                  placeholder="کد خرابی"
-                  value={failureCode}
-                  onChange={(e) => setFailureCode(e.target.value)}
-                />
-                <div className="col" />
-              </div>
-            )}
-
-            <textarea className="input" placeholder="توضیحات..." value={desc} onChange={(e) => setDesc(e.target.value)} />
-          </div>
-
-          <footer className="rq-modal__ftr">
-            <button className="btn" onClick={onClose}>
-              بستن
-            </button>
-            <button className="btn success" disabled={invalid} onClick={submit}>
-              ثبت
-            </button>
-          </footer>
-        </div>
-      </div>
-
-      {/* مهم: حالا catalog یک آرایه است و ItemPickerModal می‌تواند روی آن filter بزند */}
-      <ItemPickerModal
-        open={pickOpen}
-        onClose={() => setPickOpen(false)}
-        catalog={catalog}
-        onPick={(it) => {
-          // محافظت دربرابر آیتم‌های ناقص
-          if (it) {
-            if (it.name) setName(it.name);
-            if (it.code) setCode(it.code);
-            if (it.size) setSize(it.size);
-          }
-          setPickOpen(false);
-        }}
+      {/* مودال‌ها با کنترل open */}
+      <RequestModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={onCreate}
+        catalog={fullCatalog}
       />
-    </>
-  );
-}
-
-/* ====== HistoryModal ====== */
-function HistoryModal({ target, onClose }) {
-  const [history, setHistory] = useState([]);
-
-  useEffect(() => {
-    try {
-      const data = loadLS(LS_KEY, { open: [], archived: [] });
-      const all = [...(data.open || []), ...(data.archived || [])];
-      setHistory(
-        all
-          .filter((x) => (x.code || "") === (target.code || ""))
-          .sort((a, b) => (a.startISO || "").localeCompare(b.startISO || ""))
-      );
-    } catch {
-      setHistory([]);
-    }
-  }, [target]);
-
-  return (
-    <div className="rq-backdrop" onClick={onClose}>
-      <div className="rq-modal rq-history" dir="rtl" onClick={(e) => e.stopPropagation()}>
-        <header className="rq-modal__hdr">
-          <b>
-            تاریخچه تجهیز: {target.name || "—"} ({target.code || "—"})
-          </b>
-          <button className="rq-close" onClick={onClose}>
-            ✕
-          </button>
-        </header>
-
-        {history.length === 0 ? (
-          <div className="empty" style={{ padding: "12px" }}>
-            سابقه‌ای برای این تجهیز یافت نشد.
-          </div>
-        ) : (
-          <div className="history-list">
-            {history.map((r) => (
-              <div key={r.id} className="history-card">
-                <div className="row">
-                  <div className="hc-field">
-                    <span>شماره دستورکار:</span> <b>{r.orderNo || "—"}</b>
-                  </div>
-                  <div className="hc-field">
-                    <span>واحد مقصد:</span> {r.unit || "—"}
-                  </div>
-                  <div className="hc-field">
-                    <span>نوع درخواست:</span> {(r.reqType || "").toUpperCase()}
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="hc-field">
-                    <span>وضعیت:</span> {r.status || "—"}
-                  </div>
-                  <div className="hc-field">
-                    <span>شروع:</span> {fmtFa(r.startISO) || "—"}
-                  </div>
-                  <div className="hc-field">
-                    <span>پایان:</span> {fmtFa(r.endISO) || "—"}
-                  </div>
-                </div>
-
-                <div className="hc-block">
-                  <div className="hc-title">توضیحات</div>
-                  <div className="muted">{r.desc || "—"}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <footer className="rq-modal__ftr">
-          <button className="btn" onClick={onClose}>
-            بستن
-          </button>
-        </footer>
-      </div>
+      <HistoryModal
+        open={!!historyTarget}
+        onClose={() => setHistoryTarget(null)}
+        target={historyTarget}
+        history={historyRows}
+      />
     </div>
   );
 }

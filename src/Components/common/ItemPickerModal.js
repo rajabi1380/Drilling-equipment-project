@@ -1,80 +1,114 @@
-import React, { useMemo, useState } from "react";
+// src/Components/common/ItemPickerModal.js
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 export default function ItemPickerModal({
   open,
   onClose,
   catalog = [],
   onPick,
-  title = "انتخاب تجهیز",
+  title = "انتخاب از لیست تجهیزات",
 }) {
   const [q, setQ] = useState("");
-  const [sel, setSel] = useState(null);
 
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  const onKey = useCallback((e) => {
+    if (e.key === "Escape") { e.stopPropagation(); onClose?.(); }
+    else if (e.key === "Enter" && filtered.length) { e.preventDefault(); onPick?.(filtered[0]); }
+  }, [onClose, onPick]); // filtered عمداً وارد نشده که با هر تایپ rebind نشود
+
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
+  }, [open, onKey]);
+
+  const rows = Array.isArray(catalog) ? catalog : [];
   const filtered = useMemo(() => {
-    const t = (q || "").toLowerCase();
-    return catalog.filter(
-      (x) =>
-        (x.name || "").toLowerCase().includes(t) ||
-        (x.code || "").toLowerCase().includes(t) ||
-        // اگر سایز هم قابل جستجو بود
-        (Array.isArray(x.sizes) && x.sizes.join(" / ").toLowerCase().includes(t)) ||
-        (x.size || "").toLowerCase().includes(t)
-    );
-  }, [catalog, q]);
+    const s = q.trim().toLowerCase();
+    if (!s) return rows.slice(0, 300);
+    return rows
+      .filter((it) => {
+        const n = (it?.name || "").toLowerCase();
+        const c = (it?.code || "").toLowerCase();
+        const sz = Array.isArray(it?.sizes) ? it.sizes.join(" ").toLowerCase() : (it?.size || "").toLowerCase();
+        return n.includes(s) || c.includes(s) || sz.includes(s);
+      })
+      .slice(0, 300);
+  }, [rows, q]);
 
   if (!open) return null;
 
-  return (
-    <div className="dh-backdrop" onClick={onClose}>
-      <div className="dh-modal dh-modal--small" dir="rtl" onClick={(e) => e.stopPropagation()}>
-        <header className="dh-modal__hdr">
-          <b>{title}</b>
-          <button className="dh-close" onClick={onClose}>✕</button>
+  const body = (
+    <div className="ipm-backdrop" onClick={onClose}>
+      <div className="ipm-modal" dir="rtl" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title}>
+        <header className="ipm-header">
+          <div className="ipm-title">{title}</div>
+          <button className="ipm-close" onClick={onClose} aria-label="بستن">✕</button>
         </header>
 
-        <div className="picker">
+        <div className="ipm-body">
           <input
-            className="input"
-            placeholder="جستجو بر اساس نام، کد یا سایز..."
+            className="ipm-search"
+            placeholder="...جستجو بر اساس نام/کد/سایز"
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            autoFocus
           />
-          <div className="picker-list">
-            {filtered.length ? (
-              filtered.map((it, i) => {
-                const isChecked = sel?.code === it.code && sel?.name === it.name;
-                const sizeText = Array.isArray(it.sizes) ? it.sizes.join(" / ") : (it.size || "");
-                return (
-                  <label key={i} className="picker-row">
-                    <input
-                      type="radio"
-                      name="equip"
-                      checked={isChecked}
-                      onChange={() => setSel(it)}
-                    />
-                    <span className="picker-name">{it.name}</span>
-                    <span className="picker-code">{it.code}</span>
-                    {sizeText ? <span className="picker-size">{sizeText}</span> : null}
-                  </label>
-                );
-              })
-            ) : (
-              <div className="empty">موردی یافت نشد</div>
-            )}
+
+          <div className="ipm-tablewrap">
+            <table className="ipm-table">
+              <thead>
+                <tr>
+                  <th>نام تجهیز</th>
+                  <th>کد</th>
+                  <th>سایز</th>
+                  <th style={{ width: 110 }} /> {/* دکمه انتخاب آخرِ ردیف */}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length ? (
+                  filtered.map((it, idx) => {
+                    const size0 = Array.isArray(it?.sizes) ? (it.sizes[0] || "") : (it?.size || "");
+                    return (
+                      <tr key={`${it.code || it.name || "row"}-${idx}`}>
+                        <td>{it?.name || "—"}</td>
+                        <td>{it?.code || "—"}</td>
+                        <td>{size0 || "—"}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="ipm-pick"
+                            onClick={() => onPick?.(it)}
+                          >
+                            انتخاب
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="empty">موردی یافت نشد.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <footer className="dh-modal__ftr">
+        <footer className="ipm-footer">
           <button className="btn" onClick={onClose}>بستن</button>
-          <button
-            className="btn primary"
-            disabled={!sel}
-            onClick={() => sel && onPick(sel)}
-          >
-            تأیید
-          </button>
         </footer>
       </div>
     </div>
   );
+
+  return createPortal(body, document.body);
 }
