@@ -86,7 +86,7 @@ export default function OutModal({ open=true, onClose, onSubmit, catalogProvider
               containerClassName="rmdp-rtl"
               placeholder="تاریخ و ساعت خروج"
             />
-            <select className="input" value={status} onChange={(e)=>setStatus(e.target.value)}>
+            <select className="input"  value={status} onChange={(e)=>setStatus(e.target.value)}>
               <option>تعمیر شده</option>
               <option>بازرسی شده</option>
               <option>—</option>

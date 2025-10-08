@@ -1,4 +1,9 @@
-/* ModalBase.css — یک اندازه و استایل واحد برای همهٔ مودال‌ها */
+/* ModalBase.css — استایل یکپارچه مودال‌ها */
+
+/* ===== ریست کوچک ===== */
+*,
+*::before,
+*::after{ box-sizing:border-box; }
 
 /* ===== لایهٔ پایه مودال‌ها ===== */
 .mb-backdrop{
@@ -12,14 +17,14 @@
   background:#fff; color:#111827;
   border-radius:12px;
   box-shadow:0 20px 48px rgba(0,0,0,.18);
-  width:860px;                /* سایز پیش‌فرض استاندارد */
+  width:860px;
   max-width:95vw; max-height:90vh;
   display:flex; flex-direction:column;
   overflow:hidden;
   direction:rtl;
 }
 
-/* سایزهای اختیاری (در صورت ارسال کلاس از ModalBase.js) */
+/* سایزبندی اختیاری */
 .mb-modal.sm{ width:560px; }
 .mb-modal.md{ width:720px; }
 .mb-modal.lg{ width:960px; }
@@ -41,69 +46,62 @@
   display:flex; gap:8px; justify-content:flex-end;
 }
 
-/* ===== فرم‌های داخل مودال‌ها ===== */
+/* ===== فرم‌ها ===== */
 .mb-form .row{
   display:grid;
   grid-template-columns:1fr 1fr 1fr;
   gap:8px; margin-bottom:8px;
 }
+.mb-form .row.align-end{ align-items:end; }
 .mb-form .col{ display:flex; flex-direction:column; gap:4px; }
 
-/* ورودی‌ها و سِلکت‌ها */
+.label{ font-size:12px; color:#64748b; margin-bottom:4px; }
+
+/* ===== ورودی‌ها ===== */
 .input{
-  height:36px; padding:0 10px;
+  height:36px; line-height:36px;
+  padding:0 10px;
   border:1px solid #e5e7eb; border-radius:8px;
-  background:#fff; color:#0f172a;
-  font:inherit;
+  background:#fff; color:#0f172a; font:inherit;
 }
 .input:focus{ outline:2px solid transparent; box-shadow:0 0 0 3px rgba(37,99,235,.2); }
 .input.err{ border-color:#ef4444; }
+.input::placeholder{ color:#94a3b8; }
+
 .err-msg{ color:#ef4444; font-size:12px; margin-top:2px; }
-textarea.input{ height:90px; padding-top:8px; padding-bottom:8px; resize:vertical; min-height:90px; }
 
-/* === سِلکت شِبه‌ورودی با فلش سمت چپ برای RTL (حل مشکل افتادن فلش روی متن) === */
+/* textarea */
+textarea.input{
+  height:90px; padding-top:8px; padding-bottom:8px;
+  resize:vertical; min-height:90px; line-height:1.6;
+}
+
+/* ===== سِلکت‌ها (RTL) ===== */
 select.input{
-  -webkit-appearance:none;
-  -moz-appearance:none;
-  appearance:none;
-  background-color:#fff;
-
-  /* فلش SVG واضح */
-  background-image: url("data:image/svg+xml;utf8,\
+  -webkit-appearance:none; -moz-appearance:none; appearance:none;
+  background:#fff;
+  background-image:url("data:image/svg+xml;utf8,\
   <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'>\
     <path d='M6 8l4 4 4-4' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>\
   </svg>");
   background-repeat:no-repeat;
-  background-position:left 10px center;   /* فلش سمت چپ فیلد */
+  background-position:left 10px center;   /* فلش سمت چپ */
   background-size:16px 16px;
-
-  /* در RTL: سمت چپ (محل فلش) جا باز کنیم تا متن زیر فلش نرود */
-  padding-inline-end:36px;   /* سمت چپ فضا برای فلش */
-  padding-inline-start:10px; /* سمت راست مثل بقیه ورودی‌ها */
+  padding-left:36px;                      /* جا برای فلش */
+  padding-right:10px;
+  line-height:36px;                       /* خوانایی متن داخل سلکت */
 }
-
-/* هماهنگ با فوکوس بقیه input ها */
 select.input:focus{
   outline:2px solid transparent;
   box-shadow:0 0 0 3px rgba(37,99,235,.2);
 }
-
-/* حالت غیرفعال */
+select.input.is-placeholder{ color:#94a3b8; }
+select.input option{ color:#0f172a; }
 select.input:disabled{
-  color:#94a3b8;
-  background-color:#f8fafc;
+  color:#94a3b8; background:#f8fafc; cursor:not-allowed;
 }
 
-/* نمایش خطای قرمز مثل بقیه */
-select.input.err{ border-color:#ef4444; }
-
-/* چک‌باکس فشرده داخل فیلد */
-.input.checkbox{
-  display:flex; align-items:center; gap:8px;
-  background:#f8fafc;
-}
-
-/* دکمه‌ها */
+/* ===== دکمه‌ها ===== */
 .btn{
   height:34px; padding:0 12px;
   border:1px solid #e5e7eb; background:#f8fafc;
@@ -118,23 +116,22 @@ select.input.err{ border-color:#ef4444; }
 .btn.danger{ background:#ef4444; color:#fff; border-color:#ef4444; }
 .btn.small{ height:28px; font-size:12px; padding:0 10px; }
 
-/* گروه‌بندی دکمه‌ها (در صورت نیاز) */
 .btn-group{ display:inline-flex; gap:6px; }
 
-/* دکمه انتخاب کاتالوگ */
+/* دکمه انتخاب کاتالوگ — هم‌تراز کف ردیف */
 .pick-btn{
   height:36px; padding:0 12px;
   border:1px dashed #94a3b8; color:#0f172a;
   background:#f8fafc; border-radius:8px; cursor:pointer;
-  white-space:nowrap;
+  white-space:nowrap; align-self:end;
 }
 .pick-btn:hover{ background:#eef2f7; }
 
-/* ===== هشدار/بنر داخل مدال (مانند خطای یکسان بودن دکل‌ها) ===== */
+/* ===== هشدار/بنر ===== */
 .mb-alert{ border-radius:8px; padding:10px 12px; margin:4px 0; font-size:14px; }
 .mb-alert.warn{ background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; }
 
-/* ======= استایل کامل پیکر انتخاب (ItemPickerModal) ======= */
+/* ======= ItemPickerModal ======= */
 .ipm-backdrop{
   position:fixed; inset:0;
   background:rgba(15,23,42,.48);
@@ -160,15 +157,12 @@ select.input.err{ border-color:#ef4444; }
 
 .ipm-body{ padding:10px 12px; display:flex; flex-direction:column; gap:10px; overflow:auto; }
 
-/* جستجو */
 .ipm-search{
   height:36px; padding:0 12px;
-  border:1px solid #e5e7eb; border-radius:10px;
-  width:100%;
+  border:1px solid #e5e7eb; border-radius:10px; width:100%;
 }
 .ipm-search:focus{ outline:2px solid transparent; box-shadow:0 0 0 3px rgba(37,99,235,.2); }
 
-/* جدول اقلام */
 .ipm-tablewrap{
   border:1px solid #e5e7eb; border-radius:10px; overflow:auto; max-height:420px;
 }
@@ -181,26 +175,50 @@ select.input.err{ border-color:#ef4444; }
 }
 .ipm-table tbody tr:hover{ background:#f8fafc; }
 
-/* دکمه انتخاب داخل جدول */
 .ipm-pick{
   height:28px; padding:0 10px; border-radius:999px;
   background:#2563eb; border:1px solid #2563eb; color:#fff; cursor:pointer;
 }
 .ipm-pick:hover{ background:#1d4ed8; }
 
-/* فوتر پیکر */
 .ipm-footer{
   padding:10px 16px; border-top:1px solid #e5e7eb;
   display:flex; justify-content:flex-end;
 }
 
-/* ===== سازگاری DatePicker در RTL و داخل مدال ===== */
+/* ===== DatePicker در RTL ===== */
 .rmdp-rtl{ direction:rtl; }
-.rmdp-container .rmdp-input{ width:100%; height:36px; border-radius:8px; border:1px solid #e5e7eb; padding:0 10px; }
-.rmdp-container .rmdp-input:focus{ outline:2px solid transparent; box-shadow:0 0 0 3px rgba(37,99,235,.2); }
-
-/* پاپ‌آپ دیت‌پیکر بالاتر از مودال‌ها */
-.rmdp-wrapper, .rmdp-shadow, .rmdp-calendar{ z-index:2100 !important; }
+.rmdp-container .rmdp-input{
+  width:100%; height:36px; line-height:36px;
+  border-radius:8px; border:1px solid #e5e7eb; padding:0 10px;
+}
+.rmdp-container .rmdp-input:focus{
+  outline:2px solid transparent; box-shadow:0 0 0 3px rgba(37,99,235,.2);
+}
 
 /* ===== کمکی ===== */
 .muted{ color:#64748b; }
+/* خوانایی بهتر سِلکت RTL */
+select.input{
+  -webkit-appearance:none; -moz-appearance:none; appearance:none;
+  height:36px;
+  line-height:36px;                 /* متن دقیقاً وسط عمودی و کاملاً خوانا */
+  border:1px solid #e5e7eb; border-radius:8px;
+  background:#fff;
+  color:#0f172a;
+  padding:0 10px;                   /* padding عمودی صفر تا متن پایین نیفتد */
+  /* فلش سمت چپ */
+  background-image:url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'>\
+    <path d='M6 8l4 4 4-4' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>\
+  </svg>");
+  background-repeat:no-repeat;
+  background-position:left 10px center;
+  background-size:16px 16px;
+  padding-left:36px;                /* فضا برای فلش */
+}
+
+/* رنگ placeholder معقول‌تر (نه خیلی کمرنگ) */
+select.input option[disabled]{
+  color:#6b7280;
+}

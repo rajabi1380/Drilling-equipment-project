@@ -26,7 +26,7 @@
   height:32px; padding:0 12px; border:1px solid #e5e7eb; background:#f8fafc;
   border-radius:8px; cursor:pointer;
 }
-.tab.is-active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+.tab.is-active { background:#1d4ed8; border-color:#1d4ed8; }
 .divider { color:#cbd5e1; }
 
 /* ---- Filter bar ---- */
@@ -96,4 +96,47 @@ textarea.input { height: 90px; padding-top: 8px; padding-bottom: 8px; }
 /* ---- Small helpers ---- */
 .total-stock {
   margin-top:8px; padding:8px 10px; border:1px dashed #cbd5e1; border-radius:8px; background:#fafafa; font-weight:600;
+}
+
+/* ===== Strong Black Focus (final) ===== */
+:where(.tab, .btn, .pg-btn, .input, textarea.input, select.input){
+  outline: none;
+  transition: box-shadow .16s ease, border-color .16s ease, color .16s ease, background-color .16s ease;
+}
+
+/* Buttons & Tabs */
+.tab:focus,
+.tab:focus-visible,
+.btn:focus,
+.btn:focus-visible,
+.pg-btn:focus,
+.pg-btn:focus-visible{
+  color:#000 !important;
+  border-color:#000 !important;
+  box-shadow:0 0 0 2px rgba(0,0,0,.12) !important;
+}
+
+/* Inputs */
+.input:focus,
+.input:focus-visible,
+textarea.input:focus,
+textarea.input:focus-visible,
+select.input:focus,
+select.input:focus-visible{
+  color:#000 !important;
+  caret-color:#000 !important;
+  border-color:#000 !important;
+  box-shadow:0 0 0 2px rgba(0,0,0,.12) !important;
+}
+
+/* High-contrast users */
+@media (prefers-contrast: more){
+  .tab:focus-visible,
+  .btn:focus-visible,
+  .pg-btn:focus-visible,
+  .input:focus-visible,
+  textarea.input:focus-visible,
+  select.input:focus-visible{
+    box-shadow:0 0 0 3px rgba(0,0,0,.18) !important;
+  }
 }

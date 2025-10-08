@@ -1,12 +1,20 @@
-// DownholeInOut.js
+// src/Components/DownholeInOut.js
 import React, { useEffect, useMemo, useState } from "react";
 import "./DownholeInOut.css";
+
+/* استایل و مودال‌های مشترک */
+import ModalBase from "./common/ModalBase";
+
+/* دکمه‌های خروجی (CSV / Word) */
+import ExportButtons from "./common/ExportButtons";
+
+/* ⬇️ مدال‌های جداگانه */
+import DownholeInModal from "./Modals/DownholeInModal";
+import DownholeRigModal from "./Modals/DownholeRigModal";
 
 /* utils محلی شما */
 import { loadLS, saveLS } from "../utils/ls";
 import { DatePicker, TimePicker, persian, persian_fa, faFmt, fmtFa } from "../utils/date";
-import ExportButtons from "./common/ExportButtons";
-import ItemPickerModal from "./common/ItemPickerModal";
 
 /* کاتالوگ و دکل‌ها */
 import { getCatalogForUnit, RIGS } from "../constants/catalog";
@@ -43,34 +51,6 @@ const TECHS = [
 const CONSUMABLES = ["پیچ","مهره","واشر","اورینگ","گریس","روغن","لاستیک آب‌بندی"];
 
 const newId  = () => Number(`${Date.now()}${Math.floor(Math.random()*1e3)}`);
-
-/* CSV ساده برای خروجی (در صورت نبود util اختصاصی) */
-const simpleCSV = (filename, headers, rows) => {
-  const esc = (v) => `"${String(v ?? "").replace(/"/g,'""')}"`;
-  const csv = [headers.map(esc).join(",")]
-    .concat(rows.map(r => headers.map(h => esc(r[h])).join(",")))
-    .join("\n");
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-};
-
-/* ===== آیکون انگشت شست ===== */
-const FingerIcon = () => (
-  <svg className="finger-ico" viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-    <path fill="currentColor"
-      d="M9 11V5a2 2 0 1 1 4 0v6h1.5a2.5 2.5 0 0 1 2.5 2.5V16a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-2a3 3 0 0 1 3-3h2z" />
-  </svg>
-);
-
-/* سلول آیکن: فقط برای هم‌ترازی با inputها */
-const IconCell = ({ children }) => (
-  <div className="col" style={{display:"flex",alignItems:"center",paddingInlineStart:6}}>
-    {children}
-  </div>
-);
 
 /* ===== کامپوننت اصلی ===== */
 export default function DownholeInOut() {
@@ -128,11 +108,11 @@ export default function DownholeInOut() {
     const row = {
       id: newId(),
       unitId: payload.unitId,
-      unitTitle: UNITS[payload.unitId]?.title || "—",
+      unitTitle: UNIT_LIST.find(u=>u.id===payload.unitId)?.title || "—",
       name: payload.name,
       code: payload.code,
       size: payload.size,
-      fromWhere: payload.fromWhere || "",            // واحد ارسالی
+      fromWhere: payload.fromWhere || "",
       status: (payload.status || "سالم").trim(),
       enterISO,
       techs: [], partsUsed: [], failureDesc: "", repairCost: "",
@@ -178,10 +158,12 @@ export default function DownholeInOut() {
     setShowExit(false); setRowForExit(null); setSelectedRowId(null); setArchPage(1);
   };
 
-  /* === دکل↔دکل === */
+  /* === دکل↔دکل — با دو زمان جدید === */
   const saveRigMove = (payload) => {
-    const moveAtISO = payload.moveAtISO || toISO16Safe(payload.moveObj) || toISO16Safe(new Date());
-    const clean = { ...payload, moveAtISO };
+    const requestAtISO = toISO16Safe(payload?.requestObj) || "";
+    const arriveAtISO  = toISO16Safe(payload?.arriveObj)  || "";
+    const clean = { ...payload, requestAtISO, arriveAtISO };
+
     if (editingMove) {
       setRigMoves(p => p.map(m => (m.id === editingMove.id ? { ...m, ...clean } : m)));
       setEditingMove(null);
@@ -201,6 +183,50 @@ export default function DownholeInOut() {
     const start = (p - 1) * PAGE_SIZE;
     return { rows: arr.slice(start, start + PAGE_SIZE), p, pagesCount, total };
   };
+
+  /* ===== فیلتر سراسریِ تب دکل↔دکل ===== */
+  const [rigFilter, setRigFilter] = useState({
+    unitId: "",
+    qName: "", qCode: "", fromRig: "", toRig: "",
+    reqFrom: null, reqTo: null, arrFrom: null, arrTo: null,
+  });
+  const [rigFilterOn, setRigFilterOn] = useState(false);
+
+  const reqFromISO = toISO16Safe(rigFilter.reqFrom);
+  const reqToISO   = toISO16Safe(rigFilter.reqTo);
+  const arrFromISO = toISO16Safe(rigFilter.arrFrom);
+  const arrToISO   = toISO16Safe(rigFilter.arrTo);
+
+  const applyRigPredicate = (arr) => {
+    if (!rigFilterOn) return arr;
+    const qn = rigFilter.qName.trim().toLowerCase();
+    const qc = rigFilter.qCode.trim().toLowerCase();
+    const fr = rigFilter.fromRig.trim();
+    const tr = rigFilter.toRig.trim();
+
+    return arr.filter(m => {
+      const nameOk = !qn || (m.name||"").toLowerCase().includes(qn);
+      const codeOk = !qc || (m.code||"").toLowerCase().includes(qc);
+      const fromOk = !fr || (m.fromRig||"") === fr;
+      const toOk   = !tr || (m.toRig||"") === tr;
+
+      const rISO = m.requestAtISO || "";
+      const aISO = m.arriveAtISO  || "";
+
+      const reqFromOk = !reqFromISO || (rISO && rISO >= reqFromISO);
+      const reqToOk   = !reqToISO   || (rISO && rISO <= reqToISO);
+      const arrFromOk = !arrFromISO || (aISO && aISO >= arrFromISO);
+      const arrToOk   = !arrToISO   || (aISO && aISO <= arrToISO);
+
+      return nameOk && codeOk && fromOk && toOk && reqFromOk && reqToOk && arrFromOk && arrToOk;
+    });
+  };
+
+  // کمک برای انتخاب واحد فعال در تب دکل↔دکل
+  const rigUnitsToRender = useMemo(() => {
+    if (!rigFilterOn || !rigFilter.unitId) return UNIT_LIST;
+    return UNIT_LIST.filter(u => u.id === rigFilter.unitId);
+  }, [rigFilterOn, rigFilter.unitId]);
 
   return (
     <div className="dh-page" dir="rtl">
@@ -224,8 +250,8 @@ export default function DownholeInOut() {
             </div>
 
             {UNIT_LIST.map((u) => {
-              const list = grouped[u.id];
-              const { rows, p, pagesCount, total } = slicePage(list, pages[u.id]);
+              const list = grouped[u.id] || [];
+              const { rows, p, pagesCount, total } = slicePage(list, pages[u.id] || 1);
 
               return (
                 <section className="dh-section" key={u.id}>
@@ -237,6 +263,30 @@ export default function DownholeInOut() {
 
                   {expanded[u.id] && (
                     <>
+                      {/* خروجی مخصوص همین واحد از لیست باز */}
+                      <div className="table-toolbar">
+                        <ExportButtons
+                          variant="compact"
+                          getExport={()=>{
+                            const headers = ["نام تجهیز","کد","سایز","تاریخ ورود","وضعیت","واحد ارسالی","یادداشت"];
+                            const rows = list.map(r => ({
+                              "نام تجهیز": r.name||"",
+                              "کد": r.code||"",
+                              "سایز": r.size||"",
+                              "تاریخ ورود": r.enterISO ? fmtFa(r.enterISO) : "",
+                              "وضعیت": r.status || "",
+                              "واحد ارسالی": r.fromWhere || "",
+                              "یادداشت": r.note || ""
+                            }));
+                            return {
+                              filename: `open_${u.id}_${new Date().toISOString().slice(0,10)}`,
+                              title: `لیست باز — ${u.title}`,
+                              headers, rows
+                            };
+                          }}
+                        />
+                      </div>
+
                       <div className="table-wrap">
                         <table>
                           <thead>
@@ -292,9 +342,84 @@ export default function DownholeInOut() {
               <button type="button" className="btn warn" onClick={() => { setEditingMove(null); setShowRigModal(true); }}>ثبت دکل به دکل</button>
             </div>
 
-            {UNIT_LIST.map((u) => {
-              const list = movesByUnit[u.id].slice().sort((a,b)=>String(b.moveAtISO).localeCompare(String(a.moveAtISO)));
-              const { rows, p, pagesCount, total } = slicePage(list, rigPages[u.id]);
+            {/* نوار فیلتر سراسری دکل↔دکل */}
+            <div className="io-filter" style={{marginTop:8}}>
+              <div className="io-filter__fields" style={{gridTemplateColumns:"repeat(6, 1fr)"}}>
+                <select className="input" value={rigFilter.unitId}
+                        onChange={e=>setRigFilter(s=>({...s,unitId:e.target.value}))}>
+                  <option value="">واحد (همه)</option>
+                  {UNIT_LIST.map(u => <option key={u.id} value={u.id}>{u.title}</option>)}
+                </select>
+                <input className="input" placeholder="نام تجهیز..." value={rigFilter.qName}
+                       onChange={e=>setRigFilter(s=>({...s,qName:e.target.value}))}/>
+                <input className="input" placeholder="کد..." value={rigFilter.qCode}
+                       onChange={e=>setRigFilter(s=>({...s,qCode:e.target.value}))}/>
+                <select className="input" value={rigFilter.fromRig}
+                        onChange={e=>setRigFilter(s=>({...s,fromRig:e.target.value}))}>
+                  <option value="">از دکل (همه)</option>
+                  {RIGS.map(r=><option key={r} value={r}>{r}</option>)}
+                </select>
+                <select className="input" value={rigFilter.toRig}
+                        onChange={e=>setRigFilter(s=>({...s,toRig:e.target.value}))}>
+                  <option value="">به دکل (همه)</option>
+                  {RIGS.map(r=><option key={r} value={r}>{r}</option>)}
+                </select>
+                <div className="f-item">
+                  <div className="btnrow" style={{display:"flex",gap:8}}>
+                    <button className="btn primary" onClick={()=> setRigFilterOn(true)}>اعمال فیلتر</button>
+                    <button className="btn" onClick={()=>{
+                      setRigFilter({ unitId:"", qName:"", qCode:"", fromRig:"", toRig:"", reqFrom:null, reqTo:null, arrFrom:null, arrTo:null });
+                      setRigFilterOn(false);
+                    }}>حذف فیلتر</button>
+
+                    {/* خروجی‌های دکل↔دکل (کل نتایج/با فیلترهای جاری) */}
+                    <ExportButtons
+                      variant="compact"
+                      getExport={()=>{
+                        const units = rigUnitsToRender; // بر اساس انتخاب واحد
+                        const all = units.flatMap(u =>
+                          (applyRigPredicate(movesByUnit[u.id] || []))
+                            .map(m => ({ unitTitle: u.title, ...m }))
+                        );
+                        const headers = ["واحد","نام تجهیز","کد","سایز","از دکل","به دکل","تاریخ/ساعت درخواست","تاریخ/ساعت رسیدن","توضیحات"];
+                        const rows = all.map(r => ({
+                          "واحد": r.unitTitle || "",
+                          "نام تجهیز": r.name || "",
+                          "کد": r.code || "",
+                          "سایز": r.size || "",
+                          "از دکل": r.fromRig || "",
+                          "به دکل": r.toRig || "",
+                          "تاریخ/ساعت درخواست": r.requestAtISO ? fmtFa(r.requestAtISO) : "",
+                          "تاریخ/ساعت رسیدن":   r.arriveAtISO  ? fmtFa(r.arriveAtISO)  : "",
+                          "توضیحات": r.note || "",
+                        }));
+                        const unitSuffix = rigFilterOn && rigFilter.unitId
+                          ? `_${rigFilter.unitId}` : "_all";
+                        return {
+                          filename: `rig_moves${unitSuffix}_${new Date().toISOString().slice(0,10)}`,
+                          title: "گزارش انتقال دکل↔دکل",
+                          headers, rows
+                        };
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="muted" style={{display:"flex",gap:8,alignItems:"center"}}>
+                <span>فیلتر فعال: <b>{rigFilterOn ? "بله" : "خیر"}</b></span>
+              </div>
+            </div>
+
+            {rigUnitsToRender.map((u) => {
+              const list = applyRigPredicate(movesByUnit[u.id] || [])
+                .slice()
+                .sort((a,b)=>{
+                  const ak = String(b.requestAtISO || b.arriveAtISO || "");
+                  const bk = String(a.requestAtISO || a.arriveAtISO || "");
+                  return ak.localeCompare(bk);
+                });
+              const { rows, p, pagesCount, total } = slicePage(list, rigPages[u.id] || 1);
               const key = `rig_${u.id}`;
 
               return (
@@ -307,13 +432,40 @@ export default function DownholeInOut() {
 
                   {expanded[key] && (
                     <>
+                      {/* خروجی مخصوص همین واحد */}
+                      <div className="table-toolbar">
+                        <ExportButtons
+                          variant="compact"
+                          getExport={()=>{
+                            const headers = ["نام تجهیز","کد","سایز","از دکل","به دکل","تاریخ/ساعت درخواست","تاریخ/ساعت رسیدن","توضیحات"];
+                            const rows = list.map(r => ({
+                              "نام تجهیز": r.name || "",
+                              "کد": r.code || "",
+                              "سایز": r.size || "",
+                              "از دکل": r.fromRig || "",
+                              "به دکل": r.toRig || "",
+                              "تاریخ/ساعت درخواست": r.requestAtISO ? fmtFa(r.requestAtISO) : "",
+                              "تاریخ/ساعت رسیدن":   r.arriveAtISO  ? fmtFa(r.arriveAtISO)  : "",
+                              "توضیحات": r.note || "",
+                            }));
+                            return {
+                              filename: `rig_moves_${u.id}_${new Date().toISOString().slice(0,10)}`,
+                              title: `انتقال دکل↔دکل — ${u.title}`,
+                              headers, rows
+                            };
+                          }}
+                        />
+                      </div>
+
                       <div className="table-wrap">
                         <table>
                           <thead>
                             <tr>
                               <th>نام تجهیز</th><th>کد</th><th>سایز</th>
                               <th>از دکل</th><th>به دکل</th>
-                              <th>تاریخ انتقال</th><th>توضیحات</th><th>عملیات</th>
+                              <th>تاریخ و ساعت درخواست</th>
+                              <th>تاریخ و ساعت رسیدن</th>
+                              <th>توضیحات</th><th>عملیات</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -324,14 +476,15 @@ export default function DownholeInOut() {
                                 <td>{r.size || "—"}</td>
                                 <td>{r.fromRig}</td>
                                 <td>{r.toRig}</td>
-                                <td>{r.moveAtISO ? fmtFa(r.moveAtISO) : "—"}</td>
+                                <td>{r.requestAtISO ? fmtFa(r.requestAtISO) : "—"}</td>
+                                <td>{r.arriveAtISO  ? fmtFa(r.arriveAtISO)  : "—"}</td>
                                 <td className="muted">{r.note || "—"}</td>
                                 <td className="ops">
                                   <button className="btn small solid" onClick={()=>{ setEditingMove(r); setShowRigModal(true); }}>ویرایش</button>
                                   <button className="btn small danger" onClick={()=>removeRigMove(r.id)}>حذف</button>
                                 </td>
                               </tr>
-                            )) : <tr><td colSpan={8} className="empty">موردی ثبت نشده</td></tr>}
+                            )) : <tr><td colSpan={9} className="empty">موردی ثبت نشده</td></tr>}
                           </tbody>
                         </table>
                       </div>
@@ -353,7 +506,16 @@ export default function DownholeInOut() {
       </div>
 
       {/* ===== مودال‌ها ===== */}
-      {showIn && <InModal onClose={() => setShowIn(false)} onSubmit={addIn} />}
+      {showIn && (
+        <DownholeInModal
+          open
+          onClose={() => setShowIn(false)}
+          onSubmit={addIn}
+          unitList={UNIT_LIST}
+          catalogProvider={getCatalogForUnit}
+        />
+      )}
+
       {detailRow && (
         <DetailModal
           row={detailRow}
@@ -361,6 +523,7 @@ export default function DownholeInOut() {
           onSave={(patch) => updateDetails(detailRow.id, patch)}
         />
       )}
+
       {showExit && rowForExit && (
         <ExitModal
           row={rowForExit}
@@ -369,6 +532,7 @@ export default function DownholeInOut() {
           onSubmit={commitExit}
         />
       )}
+
       {showArchive && (
         <ArchiveModal
           rows={archivedRows}
@@ -379,6 +543,7 @@ export default function DownholeInOut() {
           slicePage={slicePage}
         />
       )}
+
       {showArchEdit && (
         <ArchiveEditModal
           row={showArchEdit}
@@ -390,117 +555,23 @@ export default function DownholeInOut() {
           }}
         />
       )}
+
       {showRigModal && (
-        <RigMoveModal
+        <DownholeRigModal
+          open
           initial={editingMove}
           onClose={() => { setShowRigModal(false); setEditingMove(null); }}
           onSubmit={saveRigMove}
+          unitList={UNIT_LIST}
         />
       )}
     </div>
   );
 }
 
-/* ===== Modal ورود ===== */
-function InModal({ onClose, onSubmit }) {
-  const [unitId, setUnitId] = useState("");
-  const [name, setName]   = useState("");
-  const [code, setCode]   = useState("");
-  const [size, setSize]   = useState("");
-  const [enterObj, setEnterObj] = useState(null);
-  const [fromWhere, setFromWhere] = useState("");
-  const [status, setStatus] = useState("سالم");
-  const [note, setNote] = useState("");
-  const [pickOpen, setPickOpen] = useState(false);
+/* ========================= Modals (داخلی) ========================= */
 
-  const catalog = useMemo(() => (unitId ? getCatalogForUnit(unitId) : []), [unitId]);
-  const missing = !unitId || !name.trim() || !code.trim() || !size.trim();
-
-  const submit = () => {
-    if (missing) return;
-    onSubmit({ unitId, name, code, size, enterObj, fromWhere, status, note });
-  };
-
-  return (
-    <>
-      <div className="dh-backdrop" onClick={onClose}>
-        {/* عریض‌تر از حالت پیش‌فرض برای جا شدن 4 ستون */}
-        <div className="dh-modal dh-modal--wide" style={{maxWidth:"1100px"}} dir="rtl" onClick={(e) => e.stopPropagation()}>
-          <header className="dh-modal__hdr">
-            <b>ثبت ورود قطعه (درون‌چاهی)</b>
-            <button className="dh-close" onClick={onClose}>✕</button>
-          </header>
-
-          <div className="form form--tight">
-            {/* انتخاب واحد (عریض) */}
-            <div className="row">
-              <select className="input unit-wide" value={unitId} onChange={(e) => setUnitId(e.target.value)}>
-                <option value="">* انتخاب واحد مقصد</option>
-                {UNIT_LIST.map((u) => <option key={u.id} value={u.id}>{u.title}</option>)}
-              </select>
-            </div>
-
-            {/* چهار آیتم در یک ردیف: نام + دکمه | کد | سایز | آیکن */}
-            <div className="row" style={{gridTemplateColumns:"2fr 1.2fr 1.2fr auto"}}>
-              <div className="col with-pick">
-                <input className={`input ${!name.trim() ? "err" : ""}`} placeholder="* نام تجهیز"
-                  value={name} onChange={(e)=>setName(e.target.value)} disabled={!unitId} />
-                
-                <small className="req-hint">الزامی</small>
-              </div>
-
-              <div className="col">
-                <input className={`input ${!code.trim() ? "err" : ""}`} placeholder="* کد تجهیز"
-                  value={code} onChange={(e)=>setCode(e.target.value)} disabled={!unitId} />
-                <small className="req-hint">الزامی</small>
-              </div>
-
-              <div className="col">
-                <input className={`input ${!size.trim() ? "err" : ""}`} placeholder="* سایز"
-                  value={size} onChange={(e)=>setSize(e.target.value)} disabled={!unitId} />
-                <small className="req-hint">الزامی</small>
-              </div>
-<button type="button" className="pick-btn" title="انتخاب از کاتالوگ"
-                  onClick={()=> setPickOpen(true)} disabled={!unitId}>☝️</button>
-            </div>
-
-            {/* تاریخ ورود + وضعیت + واحد ارسالی */}
-            <div className="row">
-              <DatePicker value={enterObj} onChange={(v)=> setEnterObj(asDate(v))}
-                calendar={persian} locale={persian_fa} format={faFmt}
-                plugins={[<TimePicker position="bottom" />]} inputClass="input"
-                containerClassName="rmdp-rtl" placeholder="تاریخ و ساعت ورود" />
-              <select className="input" value={status} onChange={(e)=> setStatus(e.target.value)}>
-                <option value="سالم">سالم</option>
-                <option value="نیاز به تعمیر">نیاز به تعمیر</option>
-              </select>
-              <input className="input" placeholder="واحد ارسالی" value={fromWhere} onChange={(e)=> setFromWhere(e.target.value)} />
-            </div>
-
-            <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e)=> setNote(e.target.value)} />
-          </div>
-
-          <footer className="dh-modal__ftr">
-            <button className="btn" onClick={onClose}>انصراف</button>
-            <button className="btn success" onClick={submit} disabled={missing}>ثبت ورود</button>
-          </footer>
-        </div>
-      </div>
-
-      <ItemPickerModal
-        open={pickOpen}
-        onClose={()=> setPickOpen(false)}
-        catalog={catalog}
-        title={unitId ? `انتخاب تجهیز — ${UNIT_LIST.find((u)=>u.id===unitId)?.title}` : "انتخاب تجهیز"}
-        onPick={(it)=>{ setName(it.name || ""); setCode(it.code || "");
-          const autoSize = Array.isArray(it.sizes) ? (it.sizes[0] || "") : (it.size || "");
-          setSize(autoSize); setPickOpen(false); }}
-      />
-    </>
-  );
-}
-
-/* ===== Modal مشخصات/تعمیر ===== */
+/* مشخصات/تعمیر */
 function DetailModal({ row, onClose, onSave }) {
   const [techs, setTechs] = useState(row.techs || []);
   const [partsUsed, setPartsUsed] = useState(row.partsUsed || []);
@@ -513,64 +584,63 @@ function DetailModal({ row, onClose, onSave }) {
   };
 
   return (
-    <div className="dh-backdrop" onClick={onClose}>
-      <div className="dh-modal dh-modal--wide" dir="rtl" onClick={(e) => e.stopPropagation()}>
-        <header className="dh-modal__hdr">
-          <b>مشخصات/تعمیر — {row.name} ({row.code})</b>
-          <button className="dh-close" onClick={onClose}>✕</button>
-        </header>
-
-        <div className="form">
-          <div className="row">
-            <div className="col">
-              <div className="label">نام افراد تعمیرات</div>
-              <div className="chips">
-                {TECHS.map(t=>(
-                  <label key={t} className={`chip ${techs.includes(t) ? "on":""}`}>
-                    <input type="checkbox" checked={techs.includes(t)} onChange={()=>toggle(techs,setTechs,t)} />
-                    {t}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="col">
-              <div className="label">قطعات مصرفی</div>
-              <div className="chips">
-                {CONSUMABLES.map(p=>(
-                  <label key={p} className={`chip ${partsUsed.includes(p) ? "on":""}`}>
-                    <input type="checkbox" checked={partsUsed.includes(p)} onChange={()=>toggle(partsUsed,setPartsUsed,p)} />
-                    {p}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <input className="input" placeholder="هزینه تعمیر (تومان)" value={repairCost} onChange={(e) => setRepairCost(e.target.value)} />
-          </div>
-
-          <div className="row">
-            <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="سالم">سالم</option>
-              <option value="نیاز به تعمیر">نیاز به تعمیر</option>
-            </select>
-            <div className="col">
-              <textarea className="input" placeholder="شرح خرابی / توضیحات" value={failureDesc} onChange={(e) => setFailureDesc(e.target.value)} />
-            </div>
-            <div className="col" />
-          </div>
-        </div>
-
-        <footer className="dh-modal__ftr">
+    <ModalBase
+      open
+      onClose={onClose}
+      title={`مشخصات/تعمیر — ${row.name} (${row.code})`}
+      size="lg"
+      footer={
+        <>
           <button type="button" className="btn" onClick={onClose}>بستن</button>
           <button type="button" className="btn primary" onClick={() => onSave({ techs, partsUsed, failureDesc, repairCost, status })}>
             ذخیره
           </button>
-        </footer>
+        </>
+      }
+    >
+      <div className="mb-form">
+        <div className="row">
+          <div className="col">
+            <div className="label">نام افراد تعمیرات</div>
+            <div className="chips">
+              {TECHS.map(t=>(
+                <label key={t} className={`chip ${techs.includes(t) ? "on":""}`}>
+                  <input type="checkbox" checked={techs.includes(t)} onChange={()=>toggle(techs,setTechs,t)} />
+                  {t}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="col">
+            <div className="label">قطعات مصرفی</div>
+            <div className="chips">
+              {CONSUMABLES.map(p=>(
+                <label key={p} className={`chip ${partsUsed.includes(p) ? "on":""}`}>
+                  <input type="checkbox" checked={partsUsed.includes(p)} onChange={()=>toggle(partsUsed,setPartsUsed,p)} />
+                  {p}
+                </label>
+              ))}
+            </div>
+          </div>
+          <input className="input" placeholder="هزینه تعمیر (تومان)" value={repairCost} onChange={(e) => setRepairCost(e.target.value)} />
+        </div>
+
+        <div className="row">
+          <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="سالم">سالم</option>
+            <option value="نیاز به تعمیر">نیاز به تعمیر</option>
+          </select>
+          <div className="col">
+            <textarea className="input" placeholder="شرح خرابی / توضیحات" value={failureDesc} onChange={(e) => setFailureDesc(e.target.value)} />
+          </div>
+          <div className="col" />
+        </div>
       </div>
-    </div>
+    </ModalBase>
   );
 }
 
-/* ===== Modal خروج ===== */
+/* خروج */
 function ExitModal({ row, rigs, onClose, onSubmit }) {
   const [exitObj, setExitObj] = useState(null);
   const [destUnit, setDestUnit] = useState("");
@@ -590,62 +660,61 @@ function ExitModal({ row, rigs, onClose, onSubmit }) {
   };
 
   return (
-    <div className="dh-backdrop" onClick={onClose}>
-      <div className="dh-modal dh-modal--wide" dir="rtl" onClick={(e) => e.stopPropagation()}>
-        <header className="dh-modal__hdr">
-          <b>ثبت خروج — {row.name} ({row.code})</b>
-          <button className="dh-close" onClick={onClose}>✕</button>
-        </header>
-
-        <div className="form form--tight">
-          <div className="row">
-            <DatePicker value={exitObj} onChange={(v)=> setExitObj(asDate(v))}
-              calendar={persian} locale={persian_fa} format={faFmt}
-              plugins={[<TimePicker position="bottom" />]} inputClass="input"
-              containerClassName="rmdp-rtl" placeholder="تاریخ و ساعت خروج (اختیاری)" />
-
-            <select className="input" value={destUnit} onChange={(e)=>{ setDestUnit(e.target.value); setDestRig(""); setDestContractor(""); }}>
-              <option value="">* واحد مقصد</option>
-              <option value="rig">دکل</option>
-              <option value="contractor">پیمانکار</option>
-              <option value="other">سایر</option>
-            </select>
-
-            <div className="col">
-              <div className="label">نوع ماشین</div>
-              <div className="seg-mini">
-                <button type="button" className={`seg2 ${vehicleKind==="شرکتی"?"on":""}`} onClick={()=> setVehicleKind("شرکتی")}>شرکتی</button>
-                <button type="button" className={`seg2 ${vehicleKind==="استیجاری"?"on":""}`} onClick={()=> setVehicleKind("استیجاری")}>استیجاری</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="row">
-            {destUnit === "rig" && (
-              <select className="input" value={destRig} onChange={(e)=> setDestRig(e.target.value)}>
-                <option value="">انتخاب دکل</option>
-                {RIGS.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            )}
-            {destUnit === "contractor" && (
-              <input className="input" placeholder="نام پیمانکار" value={destContractor} onChange={(e)=> setDestContractor(e.target.value)} />
-            )}
-            <input className="input" placeholder="شماره بارنامه" value={waybillNo} onChange={(e)=> setWaybillNo(e.target.value)} />
-          </div>
-
-          <textarea className="input" placeholder="توضیحات" value={note} onChange={(e)=> setNote(e.target.value)} />
-        </div>
-
-        <footer className="dh-modal__ftr">
+    <ModalBase
+      open
+      onClose={onClose}
+      title={`ثبت خروج — ${row.name} (${row.code})`}
+      size="lg"
+      footer={
+        <>
           <button className="btn" onClick={onClose}>انصراف</button>
           <button className="btn danger" disabled={!canSubmit} onClick={submit}>ثبت خروج</button>
-        </footer>
+        </>
+      }
+    >
+      <div className="mb-form">
+        <div className="row">
+          <DatePicker value={exitObj} onChange={setExitObj}
+            calendar={persian} locale={persian_fa} format={faFmt}
+            plugins={[<TimePicker position="bottom" />]} inputClass="input"
+            containerClassName="rmdp-rtl" placeholder="تاریخ و ساعت خروج (اختیاری)" />
+
+          <select className="input" value={destUnit} onChange={(e)=>{ setDestUnit(e.target.value); setDestRig(""); setDestContractor(""); }}>
+            <option value="">* واحد مقصد</option>
+            <option value="rig">دکل</option>
+            <option value="contractor">پیمانکار</option>
+            <option value="other">سایر</option>
+          </select>
+
+          <div className="col">
+            <div className="label">نوع ماشین</div>
+            <div className="seg-mini">
+              <button type="button" className={`seg2 ${vehicleKind==="شرکتی"?"on":""}`} onClick={()=> setVehicleKind("شرکتی")}>شرکتی</button>
+              <button type="button" className={`seg2 ${vehicleKind==="استیجاری"?"on":""}`} onClick={()=> setVehicleKind("استیجاری")}>استیجاری</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          {destUnit === "rig" && (
+            <select className="input" value={destRig} onChange={(e)=> setDestRig(e.target.value)}>
+              <option value="">انتخاب دکل</option>
+              {RIGS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          )}
+          {destUnit === "contractor" && (
+            <input className="input" placeholder="نام پیمانکار" value={destContractor} onChange={(e)=> setDestContractor(e.target.value)} />
+          )}
+          <input className="input" placeholder="شماره بارنامه" value={waybillNo} onChange={(e)=> setWaybillNo(e.target.value)} />
+        </div>
+
+        <textarea className="input" placeholder="توضیحات" value={note} onChange={(e)=> setNote(e.target.value)} />
       </div>
-    </div>
+    </ModalBase>
   );
 }
 
-/* ===== آرشیو با فیلتر تا‌شونده + خروجی ===== */
+/* آرشیو با فیلتر + خروجی */
 function ArchiveModal({ rows, onClose, onEdit, page, onPage, slicePage }) {
   const [qName, setQName] = useState("");
   const [qCode, setQCode] = useState("");
@@ -667,120 +736,120 @@ function ArchiveModal({ rows, onClose, onEdit, page, onPage, slicePage }) {
 
   const { rows: paged, p, pagesCount, total } = slicePage(filtered, page);
 
-  const exportArchiveCSV = () => {
-    const headers = ["نام تجهیز","کد","سایز","واحد مبدأ","تاریخ ورود","تاریخ خروج","واحد مقصد","دکل/پیمانکار","نوع ماشین","شماره بارنامه","یادداشت خروج","افراد تعمیر","مصرفی‌ها","شرح خرابی","هزینه تعمیر"];
-    const data = filtered.map(r => {
-      const peer = r.destUnit==="rig" ? (r.destRig||"") : r.destUnit==="contractor" ? (r.destContractor||"") : "";
-      return {
-        "نام تجهیز": r.name||"", "کد": r.code||"", "سایز": r.size||"",
-        "واحد مبدأ": r.unitTitle||"", "تاریخ ورود": r.enterISO?fmtFa(r.enterISO):"",
-        "تاریخ خروج": r.exitISO?fmtFa(r.exitISO):"", "واحد مقصد": r.destUnit||"",
-        "دکل/پیمانکار": peer, "نوع ماشین": r.vehicleKind||"", "شماره بارنامه": r.waybillNo||"",
-        "یادداشت خروج": r.exitNote||"", "افراد تعمیر": (r.techs||[]).join("، "),
-        "مصرفی‌ها": (r.partsUsed||[]).join("، "), "شرح خرابی": r.failureDesc||"",
-        "هزینه تعمیر": r.repairCost||""
-      };
-    });
-    simpleCSV(`archive_${new Date().toISOString().slice(0,10)}.csv`, headers, data);
-  };
-
   return (
-    <div className="dh-backdrop" onClick={onClose}>
-      <div className="dh-modal dh-modal--wide" dir="rtl" onClick={(e)=>e.stopPropagation()}>
-        <header className="dh-modal__hdr">
-          <b>آرشیو خروج قطعات</b>
-          <button className="dh-close" onClick={onClose}>✕</button>
-        </header>
-
-        {/* فیلتر تاشونده */}
-        <details className="arch-filter" open={!openList}>
-          <summary>فیلتر</summary>
-          <div className="form">
-            <div className="row">
-              <input className="input" placeholder="نام تجهیز..." value={qName} onChange={(e)=> setQName(e.target.value)} />
-              <input className="input" placeholder="کد تجهیز..." value={qCode} onChange={(e)=> setQCode(e.target.value)} />
-              <div className="col" />
-            </div>
-            <div className="row">
-              <DatePicker value={fromObj} onChange={(v)=> setFromObj(asDate(v))}
-                calendar={persian} locale={persian_fa} format={faFmt}
-                plugins={[<TimePicker position="bottom" />]} inputClass="input"
-                containerClassName="rmdp-rtl" placeholder="از تاریخ خروج" />
-              <DatePicker value={toObj} onChange={(v)=> setToObj(asDate(v))}
-                calendar={persian} locale={persian_fa} format={faFmt}
-                plugins={[<TimePicker position="bottom" />]} inputClass="input"
-                containerClassName="rmdp-rtl" placeholder="تا تاریخ خروج" />
-              <div className="col" />
-            </div>
-            <div className="btnrow" style={{display:"flex",gap:8}}>
-              <button className="btn primary" onClick={()=> { onPage(1); setOpenList(true); }}>اعمال فیلتر</button>
-              <button className="btn" onClick={()=> { setQName(""); setQCode(""); setFromObj(null); setToObj(null); onPage(1); }}>حذف فیلتر</button>
-            </div>
+    <ModalBase
+      open
+      onClose={onClose}
+      title="آرشیو خروج قطعات"
+      size="lg"
+      footer={<button className="btn" onClick={onClose}>بستن</button>}
+    >
+      {/* فیلتر تاشونده */}
+      <details className="arch-filter" open={!openList}>
+        <summary>فیلتر</summary>
+        <div className="mb-form">
+          <div className="row">
+            <input className="input" placeholder="نام تجهیز..." value={qName} onChange={(e)=> setQName(e.target.value)} />
+            <input className="input" placeholder="کد تجهیز..." value={qCode} onChange={(e)=> setQCode(e.target.value)} />
+            <div className="col" />
           </div>
-        </details>
-
-        {/* نوار ابزار خروجی‌ها */}
-        <div className="table-toolbar">
-          <ExportButtons onExcel={exportArchiveCSV} onWord={null} />
-          <div className="muted" style={{marginInlineStart:"auto"}}>تعداد نتایج: <b>{total}</b></div>
+          <div className="row">
+            <DatePicker value={fromObj} onChange={setFromObj}
+              calendar={persian} locale={persian_fa} format={faFmt}
+              plugins={[<TimePicker position="bottom" />]} inputClass="input"
+              containerClassName="rmdp-rtl" placeholder="از تاریخ خروج" />
+            <DatePicker value={toObj} onChange={setToObj}
+              calendar={persian} locale={persian_fa} format={faFmt}
+              plugins={[<TimePicker position="bottom" />]} inputClass="input"
+              containerClassName="rmdp-rtl" placeholder="تا تاریخ خروج" />
+            <div className="col" />
+          </div>
+          <div className="btnrow" style={{display:"flex",gap:8}}>
+            <button className="btn primary" onClick={()=> { onPage(1); setOpenList(true); }}>اعمال فیلتر</button>
+            <button className="btn" onClick={()=> { setQName(""); setQCode(""); setFromObj(null); setToObj(null); onPage(1); }}>حذف فیلتر</button>
+          </div>
         </div>
+      </details>
 
-        {/* جدول فقط وقتی list باز است */}
-        {openList && (
-          <>
-            <div className="table-wrap" style={{marginTop:8}}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>نام تجهیز</th><th>کد</th><th>سایز</th>
-                    <th>واحد مبدأ</th><th>تاریخ ورود</th><th>تاریخ خروج</th>
-                    <th>واحد مقصد</th><th>دکل/پیمانکار</th><th>نوع ماشین</th>
-                    <th>شماره بارنامه</th><th>یادداشت خروج</th><th>عملیات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paged.length ? paged.map((r)=> {
-                    const peer = r.destUnit==="rig" ? (r.destRig||"") : r.destUnit==="contractor" ? (r.destContractor||"") : "";
-                    return (
-                      <tr key={r.id}>
-                        <td>{r.name}</td><td>{r.code}</td><td>{r.size || "—"}</td>
-                        <td>{r.unitTitle || "—"}</td>
-                        <td>{r.enterISO ? fmtFa(r.enterISO) : "—"}</td>
-                        <td>{r.exitISO ? fmtFa(r.exitISO) : "—"}</td>
-                        <td>{r.destUnit || "—"}</td>
-                        <td>{peer || "—"}</td>
-                        <td>{r.vehicleKind || "—"}</td>
-                        <td>{r.waybillNo || "—"}</td>
-                        <td className="muted">{r.exitNote || "—"}</td>
-                        <td className="ops">
-                          <button className="btn small solid" onClick={()=> onEdit(r)}>ویرایش</button>
-                        </td>
-                      </tr>
-                    );
-                  }) : <tr><td colSpan={12} className="empty">موردی پیدا نشد</td></tr>}
-                </tbody>
-              </table>
-            </div>
-
-            {pagesCount > 1 && (
-              <div className="pagination">
-                <button className="pg-btn" disabled={p<=1} onClick={()=>onPage(p-1)}>قبلی</button>
-                <span>صفحه {p} از {pagesCount}</span>
-                <button className="pg-btn" disabled={p>=pagesCount} onClick={()=>onPage(p+1)}>بعدی</button>
-              </div>
-            )}
-          </>
-        )}
-
-        <footer className="dh-modal__ftr">
-          <button className="btn" onClick={onClose}>بستن</button>
-        </footer>
+      {/* نوار ابزار خروجی‌ها */}
+      <div className="table-toolbar">
+        <ExportButtons
+          getExport={()=>{
+            const headers = ["نام تجهیز","کد","سایز","واحد مبدأ","تاریخ ورود","تاریخ خروج","واحد مقصد","دکل/پیمانکار","نوع ماشین","شماره بارنامه","یادداشت خروج","افراد تعمیر","مصرفی‌ها","شرح خرابی","هزینه تعمیر"];
+            const rows = filtered.map(r => {
+              const peer = r.destUnit==="rig" ? (r.destRig||"") :
+                           r.destUnit==="contractor" ? (r.destContractor||"") : "";
+              return {
+                "نام تجهیز": r.name||"", "کد": r.code||"", "سایز": r.size||"",
+                "واحد مبدأ": r.unitTitle||"", "تاریخ ورود": r.enterISO?fmtFa(r.enterISO):"",
+                "تاریخ خروج": r.exitISO?fmtFa(r.exitISO):"", "واحد مقصد": r.destUnit||"",
+                "دکل/پیمانکار": peer, "نوع ماشین": r.vehicleKind||"", "شماره بارنامه": r.waybillNo||"",
+                "یادداشت خروج": r.exitNote||"", "افراد تعمیر": (r.techs||[]).join("، "),
+                "مصرفی‌ها": (r.partsUsed||[]).join("، "), "شرح خرابی": r.failureDesc||"",
+                "هزینه تعمیر": r.repairCost||""
+              };
+            });
+            return {
+              filename: `archive_${new Date().toISOString().slice(0,10)}`,
+              title: "گزارش آرشیو خروج قطعات",
+              headers, rows
+            };
+          }}
+        />
+        <div className="muted" style={{marginInlineStart:"auto"}}>تعداد نتایج: <b>{total}</b></div>
       </div>
-    </div>
+
+      {/* جدول فقط وقتی list باز است */}
+      {openList && (
+        <>
+          <div className="table-wrap" style={{marginTop:8}}>
+            <table>
+              <thead>
+                <tr>
+                  <th>نام تجهیز</th><th>کد</th><th>سایز</th>
+                  <th>واحد مبدأ</th><th>تاریخ ورود</th><th>تاریخ خروج</th>
+                  <th>واحد مقصد</th><th>دکل/پیمانکار</th><th>نوع ماشین</th>
+                  <th>شماره بارنامه</th><th>یادداشت خروج</th><th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.length ? paged.map((r)=> {
+                  const peer = r.destUnit==="rig" ? (r.destRig||"") : r.destUnit==="contractor" ? (r.destContractor||"") : "";
+                  return (
+                    <tr key={r.id}>
+                      <td>{r.name}</td><td>{r.code}</td><td>{r.size || "—"}</td>
+                      <td>{r.unitTitle || "—"}</td>
+                      <td>{r.enterISO ? fmtFa(r.enterISO) : "—"}</td>
+                      <td>{r.exitISO ? fmtFa(r.exitISO) : "—"}</td>
+                      <td>{r.destUnit || "—"}</td>
+                      <td>{peer || "—"}</td>
+                      <td>{r.vehicleKind || "—"}</td>
+                      <td>{r.waybillNo || "—"}</td>
+                      <td className="muted">{r.exitNote || "—"}</td>
+                      <td className="ops">
+                        <button className="btn small solid" onClick={()=> onEdit(r)}>ویرایش</button>
+                      </td>
+                    </tr>
+                  );
+                }) : <tr><td colSpan={12} className="empty">موردی پیدا نشد</td></tr>}
+              </tbody>
+            </table>
+          </div>
+
+          {pagesCount > 1 && (
+            <div className="pagination">
+              <button className="pg-btn" disabled={p<=1} onClick={()=>onPage(p-1)}>قبلی</button>
+              <span>صفحه {p} از {pagesCount}</span>
+              <button className="pg-btn" disabled={p>=pagesCount} onClick={()=>onPage(p+1)}>بعدی</button>
+            </div>
+          )}
+        </>
+      )}
+    </ModalBase>
   );
 }
 
-/* ===== ویرایش ردیف آرشیو ===== */
+/* ویرایش ردیف آرشیو */
 function ArchiveEditModal({ row, rigs, onClose, onSave }) {
   const [exitObj, setExitObj] = useState(row.exitISO ? asDate(row.exitISO) : null);
   const [destUnit, setDestUnit] = useState(row.destUnit || "");
@@ -796,63 +865,13 @@ function ArchiveEditModal({ row, rigs, onClose, onSave }) {
     (destUnit !== "contractor" || !!destContractor.trim());
 
   return (
-    <div className="dh-backdrop" onClick={onClose}>
-      <div className="dh-modal dh-modal--wide" dir="rtl" onClick={(e)=>e.stopPropagation()}>
-        <header className="dh-modal__hdr">
-          <b>ویرایش ردیف آرشیو — {row.name} ({row.code})</b>
-          <button className="dh-close" onClick={onClose}>✕</button>
-        </header>
-
-        <div className="arch-info">
-          <div><b>واحد مبدأ:</b> {row.unitTitle || "—"}</div>
-          <div><b>سایز:</b> {row.size || "—"}</div>
-          <div><b>تاریخ ورود:</b> {row.enterISO ? fmtFa(row.enterISO) : "—"}</div>
-          <div><b>وضعیت:</b> {row.status || "—"}</div>
-          <div><b>واحد ارسالی:</b> {row.fromWhere || "—"}</div>
-          <div><b>افراد تعمیر:</b> {(row.techs||[]).join("، ") || "—"}</div>
-          <div><b>مصرفی‌ها:</b> {(row.partsUsed||[]).join("، ") || "—"}</div>
-          <div><b>شرح خرابی:</b> {row.failureDesc || "—"}</div>
-          <div><b>هزینه تعمیر:</b> {row.repairCost || "—"}</div>
-        </div>
-
-        <div className="form form--tight">
-          <div className="row">
-            <DatePicker value={exitObj} onChange={(v)=> setExitObj(asDate(v))}
-              calendar={persian} locale={persian_fa} format={faFmt}
-              plugins={[<TimePicker position="bottom" />]} inputClass="input"
-              containerClassName="rmdp-rtl" placeholder="تاریخ و ساعت خروج (اختیاری)" />
-            <select className="input" value={destUnit} onChange={(e)=> { setDestUnit(e.target.value); setDestRig(""); setDestContractor(""); }}>
-              <option value="">* واحد مقصد</option>
-              <option value="rig">دکل</option>
-              <option value="contractor">پیمانکار</option>
-              <option value="other">سایر</option>
-            </select>
-            <div className="col">
-              <div className="label">نوع ماشین</div>
-              <div className="seg-mini">
-                <button type="button" className={`seg2 ${vehicleKind==="شرکتی"?"on":""}`} onClick={()=> setVehicleKind("شرکتی")}>شرکتی</button>
-                <button type="button" className={`seg2 ${vehicleKind==="استیجاری"?"on":""}`} onClick={()=> setVehicleKind("استیجاری")}>استیجاری</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="row">
-            {destUnit==="rig" && (
-              <select className="input" value={destRig} onChange={(e)=> setDestRig(e.target.value)}>
-                <option value="">انتخاب دکل</option>
-                {rigs.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            )}
-            {destUnit==="contractor" && (
-              <input className="input" placeholder="نام پیمانکار" value={destContractor} onChange={(e)=> setDestContractor(e.target.value)} />
-            )}
-            <input className="input" placeholder="شماره بارنامه" value={waybillNo} onChange={(e)=> setWaybillNo(e.target.value)} />
-          </div>
-
-          <textarea className="input" placeholder="توضیحات خروج" value={note} onChange={(e)=> setNote(e.target.value)} />
-        </div>
-
-        <footer className="dh-modal__ftr">
+    <ModalBase
+      open
+      onClose={onClose}
+      title={`ویرایش ردیف آرشیو — ${row.name} (${row.code})`}
+      size="lg"
+      footer={
+        <>
           <button className="btn" onClick={onClose}>انصراف</button>
           <button className="btn primary" disabled={!canSubmit}
             onClick={()=> onSave({
@@ -860,122 +879,51 @@ function ArchiveEditModal({ row, rigs, onClose, onSave }) {
               destUnit, destRig, destContractor, vehicleKind, waybillNo, exitNote: note
             })}
           >ذخیره</button>
-        </footer>
+        </>
+      }
+    >
+      <div className="arch-info">
+        <div><b>واحد مبدأ:</b> {row.unitTitle || "—"}</div>
+        <div><b>سایز:</b> {row.size || "—"}</div>
+        <div><b>تاریخ ورود:</b> {row.enterISO ? fmtFa(row.enterISO) : "—"}</div>
+        <div><b>وضعیت:</b> {row.status || "—"}</div>
+        <div><b>واحد ارسالی:</b> {row.fromWhere || "—"}</div>
+        <div><b>افراد تعمیر:</b> {(row.techs||[]).join("، ") || "—"}</div>
+        <div><b>مصرفی‌ها:</b> {(row.partsUsed||[]).join("، ") || "—"}</div>
+        <div><b>شرح خرابی:</b> {row.failureDesc || "—"}</div>
+        <div><b>هزینه تعمیر:</b> {row.repairCost || "—"}</div>
       </div>
-    </div>
-  );
-}
 
-/* ===== مودال دکل↔دکل ===== */
-function RigMoveModal({ initial, onClose, onSubmit }) {
-  const [unitId, setUnitId] = useState(initial?.unitId || "");
-  const [name, setName] = useState(initial?.name || "");
-  const [code, setCode] = useState(initial?.code || "");
-  const [size, setSize] = useState(initial?.size || "");
-  const [fromRig, setFromRig] = useState(initial?.fromRig || "");
-  const [toRig, setToRig] = useState(initial?.toRig || "");
-  const [moveObj, setMoveObj] = useState(initial?.moveAtISO ? asDate(initial.moveAtISO) : null);
-  const [note, setNote] = useState(initial?.note || "");
-  const [pickOpen, setPickOpen] = useState(false);
-
-  const catalog = useMemo(() => (unitId ? getCatalogForUnit(unitId) : []), [unitId]);
-
-  const sameRig = fromRig && toRig && fromRig === toRig;
-  const missing = !unitId || !name.trim() || !code.trim() || !size.trim() || !fromRig || !toRig || sameRig;
-
-  const submit = () => {
-    if (missing) return;
-    onSubmit({
-      unitId,
-      unitTitle: UNIT_LIST.find((u) => u.id === unitId)?.title || "—",
-      name, code, size, fromRig, toRig,
-      moveObj,
-      note,
-    });
-  };
-
-  return (
-    <>
-      <div className="dh-backdrop" onClick={onClose}>
-        {/* عریض‌تر تا چهار ستون فیلد جا شود */}
-        <div className="dh-modal dh-modal--wide" style={{maxWidth:"1100px"}} dir="rtl" onClick={(e) => e.stopPropagation()}>
-          <header className="dh-modal__hdr">
-            <b>{initial ? "ویرایش انتقال دکل↔دکل" : "ثبت انتقال دکل↔دکل"}</b>
-            <button className="dh-close" onClick={onClose}>✕</button>
-          </header>
-
-          <div className="form form--tight">
-            <div className="row">
-              <select className="input unit-wide" value={unitId} onChange={(e) => setUnitId(e.target.value)}>
-                <option value="">* انتخاب واحد</option>
-                {UNIT_LIST.map((u) => <option key={u.id} value={u.id}>{u.title}</option>)}
-              </select>
-            </div>
-
-            {/* چهار آیتم در یک ردیف: نام + دکمه | کد | سایز | آیکن */}
-            <div className="row" style={{gridTemplateColumns:"2fr 1.2fr 1.2fr auto"}}>
-              <div className="col with-pick">
-                <input className={`input ${!name.trim() ? "err":""}`} placeholder="* نام تجهیز"
-                  value={name} onChange={(e)=> setName(e.target.value)} disabled={!unitId}/>
-               
-                <small className="req-hint">الزامی</small>
-              </div>
-
-              <div className="col">
-                <input className={`input ${!code.trim() ? "err":""}`} placeholder="* کد تجهیز"
-                  value={code} onChange={(e)=> setCode(e.target.value)} disabled={!unitId}/>
-                <small className="req-hint">الزامی</small>
-              </div>
-
-              <div className="col">
-                <input className={`input ${!size.trim() ? "err":""}`} placeholder="* سایز"
-                  value={size} onChange={(e)=> setSize(e.target.value)} disabled={!unitId}/>
-                <small className="req-hint">الزامی</small>
-              </div>
-
-           <button type="button" className="pick-btn" title="انتخاب از کاتالوگ"
-                  onClick={()=> setPickOpen(true)} disabled={!unitId}>☝️</button>
-            </div>
-
-            <div className="row">
-              <select className={`input ${!fromRig || sameRig ? "err":""}`} value={fromRig} onChange={(e)=> setFromRig(e.target.value)}>
-                <option value="">* از دکل</option>
-                {RIGS.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-              <select className={`input ${!toRig || sameRig ? "err":""}`} value={toRig} onChange={(e)=> setToRig(e.target.value)}>
-                <option value="">* به دکل</option>
-                {RIGS.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-
-              <DatePicker value={moveObj} onChange={(v)=> setMoveObj(asDate(v))}
-                calendar={persian} locale={persian_fa} format={faFmt}
-                plugins={[<TimePicker position="bottom" />]} inputClass="input"
-                containerClassName="rmdp-rtl" placeholder="تاریخ و ساعت انتقال (اختیاری)" />
-            </div>
-
-            {sameRig && <div className="alert warn">مبدأ و مقصد نمی‌تواند یکسان باشد.</div>}
-
-            <textarea className="input" placeholder="توضیحات" value={note} onChange={(e)=> setNote(e.target.value)} />
-          </div>
-
-          <footer className="dh-modal__ftr">
-            <button className="btn" onClick={onClose}>انصراف</button>
-            <button className="btn success" onClick={submit} disabled={missing}>
-              {initial ? "ذخیره تغییرات" : "ثبت انتقال"}
-            </button>
-          </footer>
+      <div className="mb-form">
+        <div className="row">
+          <DatePicker value={exitObj} onChange={setExitObj}
+            calendar={persian} locale={persian_fa} format={faFmt}
+            plugins={[<TimePicker position="bottom" />]} inputClass="input"
+            containerClassName="rmdp-rtl" placeholder="تاریخ و ساعت خروج (اختیاری)" />
+          <select className="input" value={destUnit} onChange={(e)=> { setDestUnit(e.target.value); setDestRig(""); setDestContractor(""); }}>
+            <option value="">* واحد مقصد</option>
+            <option value="rig">دکل</option>
+            <option value="contractor">پیمانکار</option>
+            <option value="other">سایر</option>
+          </select>
+          <div className="col" />
         </div>
-      </div>
 
-      <ItemPickerModal
-        open={pickOpen}
-        onClose={()=> setPickOpen(false)}
-        catalog={catalog}
-        title={unitId ? `انتخاب تجهیز — ${UNIT_LIST.find((u)=>u.id===unitId)?.title}` : "انتخاب تجهیز"}
-        onPick={(it)=>{ setName(it.name || ""); setCode(it.code || "");
-          const autoSize = Array.isArray(it.sizes) ? (it.sizes[0] || "") : (it.size || "");
-          setSize(autoSize); setPickOpen(false); }}
-      />
-    </>
+        <div className="row">
+          {destUnit==="rig" && (
+            <select className="input" value={destRig} onChange={(e)=> setDestRig(e.target.value)}>
+              <option value="">انتخاب دکل</option>
+              {RIGS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          )}
+          {destUnit==="contractor" && (
+            <input className="input" placeholder="نام پیمانکار" value={destContractor} onChange={(e)=> setDestContractor(e.target.value)} />
+          )}
+          <input className="input" placeholder="شماره بارنامه" value={waybillNo} onChange={(e)=> setWaybillNo(e.target.value)} />
+        </div>
+
+        <textarea className="input" placeholder="توضیحات خروج" value={note} onChange={(e)=> setNote(e.target.value)} />
+      </div>
+    </ModalBase>
   );
 }
