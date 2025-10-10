@@ -1,11 +1,11 @@
 // src/Components/GroupOps.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import "./DownholeInOut.css";            // پایه (دکمه‌ها، تب‌های تیتر، جدول و …)
-import "./GroupOps.css";                 // استایل اختصاصی این صفحه
+import "./DownholeInOut.css";
+import "./GroupOps.css";
 import { RIGS } from "../constants/catalog";
 import { exportCSV, exportDOC } from "../utils/export";
 
-// تقویم شمسی + زمان (همانی که در پروژه داری)
+// تقویم شمسی + زمان
 import {
   DatePicker,
   TimePicker,
@@ -15,19 +15,18 @@ import {
   toISO16,
 } from "../utils/date";
 
-const LS_KEY = "ops_groups_v6";
+const LS_KEY = "ops_groups_v11"; // خروجی کامل + مودال اعضای سفید/کاستوم
 const COST_PER_HOUR = 200_000;
 const newId = () => Number(`${Date.now()}${Math.floor(Math.random() * 1e3)}`);
 
-/* ===== Tabs header ===== */
 function TabsHeader({ tab, setTab }) {
   return (
     <div className="tabs-titlebar" role="tablist" aria-label="گروه‌های عملیاتی">
-      <button className={`tabbtn ${tab === "groups" ? "is-on" : ""}`} role="tab" aria-selected={tab === "groups"} onClick={() => setTab("groups")}>گزارش عملیات</button>
+      <button className={`tabbtn ${tab === "groups" ? "is-on" : ""}`} onClick={() => setTab("groups")}>گزارش عملیات</button>
       <span className="divider" aria-hidden />
-      <button className={`tabbtn ${tab === "members" ? "is-on" : ""}`} role="tab" aria-selected={tab === "members"} onClick={() => setTab("members")}>اعضا</button>
+      <button className={`tabbtn ${tab === "members" ? "is-on" : ""}`} onClick={() => setTab("members")}>اعضا</button>
       <span className="divider" aria-hidden />
-      <button className={`tabbtn ${tab === "reports" ? "is-on" : ""}`} role="tab" aria-selected={tab === "reports"} onClick={() => setTab("reports")}>گزارش‌ها</button>
+      <button className={`tabbtn ${tab === "reports" ? "is-on" : ""}`} onClick={() => setTab("reports")}>گزارش‌ها</button>
     </div>
   );
 }
@@ -62,19 +61,15 @@ export default function GroupOps() {
 
   const [tab, setTab] = useState("groups");
 
-  /* ---- فیلترهای تب «گزارش عملیات» ---- */
-  const [gFilters, setGFilters] = useState({
-    name: "", rig: "", fromObj: null, toObj: null, fromISO: "", toISO: ""
-  });
-  const applyGFilters = (e) => {
-    e?.preventDefault?.();
-    setGFilters((f) => ({ ...f, fromISO: toISO16(f.fromObj), toISO: toISO16(f.toObj) }));
-  };
+  /* ==== فیلترهای تب «گزارش عملیات» ==== */
+  const [gFilters, setGFilters] = useState({ name: "", rig: "", fromObj: null, toObj: null, fromISO: "", toISO: "" });
+  const applyGFilters = (e) => { e?.preventDefault?.(); setGFilters(f => ({ ...f, fromISO: toISO16(f.fromObj), toISO: toISO16(f.toObj) })); };
   const clearGFilters = () => setGFilters({ name: "", rig: "", fromObj: null, toObj: null, fromISO: "", toISO: "" });
 
   const filteredGroups = useMemo(() => {
+    const base = groups.filter(g => !g.archived);
     const f = gFilters;
-    return groups.filter((g) => {
+    return base.filter((g) => {
       const okN = !f.name || (g.name || "").toLowerCase().includes(f.name.toLowerCase());
       const okR = !f.rig || (g.rig || "") === f.rig;
       const okFrom = !f.fromISO || (g.dispatchAtISO && g.dispatchAtISO >= f.fromISO);
@@ -83,19 +78,15 @@ export default function GroupOps() {
     });
   }, [groups, gFilters]);
 
-  /* ---- فیلترهای تب «گزارش‌ها» ---- */
-  const [rFilters, setRFilters] = useState({
-    name: "", rig: "", fromObj: null, toObj: null, fromISO: "", toISO: ""
-  });
-  const applyRFilters = (e) => {
-    e?.preventDefault?.();
-    setRFilters((f) => ({ ...f, fromISO: toISO16(f.fromObj), toISO: toISO16(f.toObj) }));
-  };
-  const clearRFilters = () => setRFilters({ name: "", rig: "", fromObj: null, toObj: null, fromISO: "", toISO: "" });
+  /* ==== فیلترهای تب «گزارش‌ها» ==== */
+  const [rFilters, setRFilters] = useState({ name: "", rig: "", fromObj: null, toObj: null, fromISO: "", toISO: "", applied: false });
+  const applyRFilters = (e) => { e?.preventDefault?.(); setRFilters(f => ({ ...f, fromISO: toISO16(f.fromObj), toISO: toISO16(f.toObj), applied: true })); };
+  const clearRFilters = () => setRFilters({ name: "", rig: "", fromObj: null, toObj: null, fromISO: "", toISO: "", applied: false });
 
-  const filteredForReports = useMemo(() => {
+  const archivedFiltered = useMemo(() => {
+    const base = groups.filter(g => g.archived);
     const f = rFilters;
-    return groups.filter((g) => {
+    return base.filter((g) => {
       const okN = !f.name || (g.name || "").toLowerCase().includes(f.name.toLowerCase());
       const okR = !f.rig || (g.rig || "") === f.rig;
       const okFrom = !f.fromISO || (g.dispatchAtISO && g.dispatchAtISO >= f.fromISO);
@@ -104,38 +95,35 @@ export default function GroupOps() {
     });
   }, [groups, rFilters]);
 
-  /* ---- CRUD ---- */
+  /* ==== CRUD ==== */
   const [editing, setEditing] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const startNew = () => { setEditing(null); setShowModal(true); };
   const startEdit = (g) => { setEditing(g); setShowModal(true); };
-  const remove = (id) => setGroups((prev) => prev.filter((g) => g.id !== id));
+  const remove = (id) => setGroups(prev => prev.filter(g => g.id !== id));
+  const archive = (id) => setGroups(prev => prev.map(g => g.id === id ? { ...g, archived: true } : g));
 
   const saveGroup = (payload) => {
-    // نرمال‌سازی اعضا و عدم تکرار نام‌ها (و حذف لیدر از لیست اعضا اگر تکرار بود)
     const uniqMembers = Array.from(new Set(payload.members || [])).filter(n => n !== (payload.lead || ""));
-    const clean = { ...payload, members: uniqMembers };
-    if (editing) {
-      setGroups((prev) => prev.map((g) => (g.id === editing.id ? { ...g, ...clean } : g)));
-    } else {
-      setGroups((prev) => [{ id: newId(), ...clean }, ...prev]);
-    }
+    const clean = { ...payload, members: uniqMembers, archived: payload.archived ?? false };
+    if (editing) setGroups(prev => prev.map(g => g.id === editing.id ? { ...g, ...clean } : g));
+    else setGroups(prev => [{ id: newId(), ...clean }, ...prev ]);
     setShowModal(false); setEditing(null);
   };
 
-  /* ---- آمار ---- */
+  /* ==== آمار ==== */
   const statsOf = (g) => {
     const total = (g.tasks || []).length;
-    const done = total; // همه کارها پیش‌فرض تکمیل هستند
+    const done = total;
     const hours = diffHours(g.dispatchAtISO, g.finishAtISO);
     const allDone = total > 0;
     return { total, done, hours, allDone };
   };
 
-  /* ---- تجمیع برای تب گزارش‌ها ---- */
+  /* ==== تجمیع گزارش‌ها ==== */
   const peopleAgg = useMemo(() => {
     const map = new Map();
-    for (const g of filteredForReports) {
+    for (const g of archivedFiltered) {
       const hours = diffHours(g.dispatchAtISO, g.finishAtISO);
       const participants = new Set([...(g.members || []), ...(g.lead ? [g.lead] : [])]);
       for (const name of participants) {
@@ -145,11 +133,11 @@ export default function GroupOps() {
       }
     }
     return Array.from(map, ([name, v]) => ({ name, ...v }));
-  }, [filteredForReports]);
+  }, [archivedFiltered]);
 
   const peopleMonthly = useMemo(() => {
     const map = new Map();
-    for (const g of filteredForReports) {
+    for (const g of archivedFiltered) {
       const hours = diffHours(g.dispatchAtISO, g.finishAtISO);
       const m = monthKey(g.dispatchAtISO);
       const participants = new Set([...(g.members || []), ...(g.lead ? [g.lead] : [])]);
@@ -161,24 +149,26 @@ export default function GroupOps() {
       }
     }
     return Array.from(map.values()).sort((a, b) => (a.month < b.month ? 1 : a.month > b.month ? -1 : a.name.localeCompare(b.name, "fa")));
-  }, [filteredForReports]);
+  }, [archivedFiltered]);
 
   const rigsAgg = useMemo(() => {
     const map = new Map();
-    for (const g of filteredForReports) {
+    for (const g of archivedFiltered) {
       const key = g.rig || "—";
       const hours = diffHours(g.dispatchAtISO, g.finishAtISO);
       const cur = map.get(key) || { count: 0, hours: 0 };
       map.set(key, { count: cur.count + 1, hours: cur.hours + hours });
     }
     return Array.from(map, ([rig, v]) => ({ rig, ...v }));
-  }, [filteredForReports]);
+  }, [archivedFiltered]);
 
-  /* ---- خروجی‌ها ---- */
+  /* ==== خروجی‌ها: تب «گزارش عملیات» ==== */
   const exportGroupsCSV = () => {
     const rows = filteredGroups.map((g) => ({
       "عنوان گزارش": g.name || "",
       "دکل": g.rig || "",
+      "نوع خودرو": g.vehicleType || "",
+      "مالکیت خودرو": g.vehicleOwner || "",
       "اعزام": g.dispatchAtISO?.replace("T", " ") || "",
       "پایان": g.finishAtISO?.replace("T", " ") || "",
       "لیدر": g.lead || "",
@@ -186,55 +176,107 @@ export default function GroupOps() {
       "تعداد موضوع": (g.tasks || []).length,
       "وضعیت": (g.tasks || []).length ? "تکمیل‌شده" : "—",
     }));
-    const headers = Object.keys(rows[0] || {
-      "عنوان گزارش": "", "دکل": "", "اعزام": "", "پایان": "", "لیدر": "", "اعضا": "", "تعداد موضوع": 0, "وضعیت": ""
-    });
+    const headers = Object.keys(rows[0] || {});
     exportCSV(`ops_groups_${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
   };
   const exportGroupsDOC = () => {
     const rows = filteredGroups.map((g) => ({
       "عنوان گزارش": g.name || "",
       "دکل": g.rig || "",
+      "نوع خودرو": g.vehicleType || "",
+      "مالکیت خودرو": g.vehicleOwner || "",
+      "اعضا": (g.members || []).join("، "),
+      "لیدر": g.lead || "",
       "اعزام": g.dispatchAtISO?.replace("T", " ") || "",
       "پایان": g.finishAtISO?.replace("T", " ") || "",
       "شرح کارها": (g.tasks || []).map(t => `• ${t.subject}${t.desc ? ` — ${t.desc}` : ""}`).join("\n"),
     }));
-    const headers = Object.keys(rows[0] || { "عنوان گزارش": "", "دکل": "", "اعزام": "", "پایان": "", "شرح کارها": "" });
-    exportDOC(`ops_groups_${new Date().toISOString().slice(0,10)}.doc`, "گزارش عملیات", headers, rows);
+    const headers = Object.keys(rows[0] || {});
+    exportDOC(`ops_groups_${new Date().toISOString().slice(0,10)}.doc`, "گزارش عملیات (فعال)", headers, rows);
+  };
+
+  /* ==== خروجی‌ها: تب «گزارش‌ها» (کامل + تجمیعی) ==== */
+  const exportReportsAllCSV = () => {
+    const rows = [];
+    archivedFiltered.forEach((g) => {
+      const s = statsOf(g);
+      const base = {
+        "ID عملیات": g.id,
+        "عنوان گزارش": g.name || "",
+        "دکل": g.rig || "",
+        "نوع خودرو": g.vehicleType || "",
+        "مالکیت خودرو": g.vehicleOwner || "",
+        "اعضا": (g.members || []).join("، "),
+        "لیدر": g.lead || "",
+        "اعزام": g.dispatchAtISO ? g.dispatchAtISO.replace("T"," ") : "",
+        "پایان": g.finishAtISO ? g.finishAtISO.replace("T"," ") : "",
+        "مدت (ساعت)": s.hours,
+        "تعداد موضوع": s.total,
+      };
+      if ((g.tasks || []).length) {
+        g.tasks.forEach(t => {
+          rows.push({ ...base, "ID کار": t.id, "موضوع کار": t.subject || "", "شرح کار": t.desc || "" });
+        });
+      } else {
+        rows.push({ ...base, "ID کار":"", "موضوع کار":"", "شرح کار":"" });
+      }
+    });
+    const headers = Object.keys(rows[0] || {});
+    exportCSV(`ops_reports_full_${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
+  };
+  const exportReportsAllDOC = () => {
+    const rows = archivedFiltered.map((g) => {
+      const s = statsOf(g);
+      return {
+        "عنوان گزارش": g.name || "",
+        "دکل": g.rig || "",
+        "وسیله": `${g.vehicleType||"—"} / ${g.vehicleOwner||"—"}`,
+        "اعضا": (g.members||[]).join("، "),
+        "لیدر": g.lead || "",
+        "اعزام": g.dispatchAtISO ? g.dispatchAtISO.replace("T"," ") : "",
+        "پایان": g.finishAtISO ? g.finishAtISO.replace("T"," ") : "",
+        "مدت (ساعت)": s.hours,
+        "کارها": (g.tasks||[]).length
+          ? (g.tasks||[]).map(t => `• ${t.subject}${t.desc?` — ${t.desc}`:""}`).join("\n")
+          : "—"
+      };
+    });
+    const headers = Object.keys(rows[0] || {});
+    exportDOC(`ops_reports_full_${new Date().toISOString().slice(0,10)}.doc`, "جزئیات کامل عملیاتِ بایگانی‌شده", headers, rows);
   };
 
   const exportReportsCSV = () => {
-    const rows = filteredForReports.map((g) => {
-      const s = statsOf(g);
-      return {
-        "گزارش": g.name || "",
-        "دکل": g.rig || "",
-        "اعزام": g.dispatchAtISO?.replace("T", " ") || "",
-        "پایان": g.finishAtISO?.replace("T", " ") || "",
-        "مدت (ساعت)": s.hours,
-        "تعداد موضوع": s.total,
-        "وضعیت": s.allDone ? "✅" : "—",
-      };
-    });
-    const headers = Object.keys(rows[0] || {
-      "گزارش": "", "دکل": "", "اعزام": "", "پایان": "", "مدت (ساعت)": 0, "تعداد موضوع": 0, "وضعیت": ""
-    });
-    exportCSV(`ops_reports_${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
+    const rows = peopleMonthly.map(r => ({
+      "ماه": r.month, "نام نفر": r.name, "تعداد مأموریت": r.count, "ساعات": r.hours, "هزینه (تومان)": r.cost
+    }));
+    const headers = Object.keys(rows[0] || {});
+    exportCSV(`ops_reports_agg_${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
   };
   const exportReportsDOC = () => {
-    const rows = filteredForReports.map((g) => {
-      const s = statsOf(g);
-      return {
-        "گزارش": g.name || "",
-        "دکل": g.rig || "",
-        "اعزام": g.dispatchAtISO?.replace("T", " ") || "",
-        "پایان": g.finishAtISO?.replace("T", " ") || "",
-        "مدت (ساعت)": s.hours,
-        "موضوع‌ها": (g.tasks || []).map(t => `• ${t.subject}${t.desc ? ` — ${t.desc}` : ""}`).join("\n"),
-      };
-    });
-    const headers = Object.keys(rows[0] || { "گزارش": "", "دکل": "", "اعزام": "", "پایان": "", "مدت (ساعت)": 0, "موضوع‌ها": "" });
-    exportDOC(`ops_reports_${new Date().toISOString().slice(0,10)}.doc`, "خلاصه گزارش‌ها", headers, rows);
+    const rows = [
+      { بخش: "افراد (کل)", داده: peopleAgg.map(r => `${r.name}: ${r.count} مأموریت، ${r.hours} ساعت، هزینه ${money(r.cost)} تومان`).join("\n") },
+      { بخش: "افراد بر حسب ماه", داده: peopleMonthly.map(r => `${r.month} | ${r.name}: ${r.count} مأموریت، ${r.hours} ساعت، ${money(r.cost)} تومان`).join("\n") },
+      { بخش: "دکل‌ها", داده: rigsAgg.map(r => `${r.rig}: ${r.count} مأموریت، ${r.hours} ساعت`).join("\n") },
+    ];
+    exportDOC(`ops_reports_agg_${new Date().toISOString().slice(0,10)}.doc`, "گزارش‌های بایگانی‌شده (تجمیعی)", ["بخش","داده"], rows);
+  };
+
+  /* ====== state و منطق مدال نام عضو (Add/Edit) ====== */
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [editingPersonId, setEditingPersonId] = useState(null); // null => افزودن
+
+  const openAddMember = () => { setEditingPersonId(null); setNameDraft(""); setShowNamePrompt(true); };
+  const openEditMember = (p) => { setEditingPersonId(p.id); setNameDraft(p.name || ""); setShowNamePrompt(true); };
+  const saveNamePrompt = () => {
+    const val = (nameDraft || "").trim();
+    if (!val) { setShowNamePrompt(false); return; }
+    if (editingPersonId == null) {
+      setPeople(prev => [{ id: newId(), name: val }, ...prev]);
+    } else {
+      setPeople(prev => prev.map(x => x.id === editingPersonId ? { ...x, name: val } : x));
+    }
+    setShowNamePrompt(false);
   };
 
   return (
@@ -245,27 +287,14 @@ export default function GroupOps() {
         {/* ===== تب گزارش عملیات ===== */}
         {tab === "groups" && (
           <>
-            {/* فیلترهای بالا + خروجی */}
             <form className="dh-toolbar grp-filter" onSubmit={applyGFilters}>
-              <input className="input" placeholder="عنوان گزارش…" value={gFilters.name} onChange={(e) => setGFilters(f => ({ ...f, name: e.target.value }))} />
+              <input className="input" style={{minWidth:180}} placeholder="عنوان گزارش…" value={gFilters.name} onChange={(e) => setGFilters(f => ({ ...f, name: e.target.value }))} />
               <select className="input" value={gFilters.rig} onChange={(e) => setGFilters(f => ({ ...f, rig: e.target.value }))}>
                 <option value="">دکل (همه)</option>
                 {RIGS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
-              <DatePicker
-                value={gFilters.fromObj}
-                onChange={(v) => setGFilters(f => ({ ...f, fromObj: v }))}
-                calendar={persian} locale={persian_fa} format={faFmt}
-                plugins={[<TimePicker position="bottom" />]}
-                inputClass="input" containerClassName="rmdp-rtl"
-              />
-              <DatePicker
-                value={gFilters.toObj}
-                onChange={(v) => setGFilters(f => ({ ...f, toObj: v }))}
-                calendar={persian} locale={persian_fa} format={faFmt}
-                plugins={[<TimePicker position="bottom" />]}
-                inputClass="input" containerClassName="rmdp-rtl"
-              />
+              <DatePicker value={gFilters.fromObj} onChange={(v) => setGFilters(f => ({ ...f, fromObj: v }))} calendar={persian} locale={persian_fa} format={faFmt} plugins={[<TimePicker position="bottom" />]} inputClass="input" containerClassName="rmdp-rtl" />
+              <DatePicker value={gFilters.toObj} onChange={(v) => setGFilters(f => ({ ...f, toObj: v }))} calendar={persian} locale={persian_fa} format={faFmt} plugins={[<TimePicker position="bottom" />]} inputClass="input" containerClassName="rmdp-rtl" />
               <button className="btn primary" type="submit">اعمال فیلتر</button>
               {(gFilters.name || gFilters.rig || gFilters.fromObj || gFilters.toObj) && (
                 <button className="btn" type="button" onClick={clearGFilters}>حذف فیلتر</button>
@@ -279,7 +308,6 @@ export default function GroupOps() {
               </div>
             </form>
 
-            {/* کارت‌ها */}
             <div className="grp-grid">
               {filteredGroups.length ? filteredGroups.map((g) => {
                 const s = statsOf(g);
@@ -292,6 +320,7 @@ export default function GroupOps() {
 
                     <div className="grp-row"><span className="muted">لیدر:</span><span>{g.lead || "—"}</span></div>
                     <div className="grp-row"><span className="muted">اعضا:</span><span>{(g.members || []).join("، ") || "—"}</span></div>
+                    <div className="grp-row"><span className="muted">وسیله:</span><span>{(g.vehicleType || "—") + " / " + (g.vehicleOwner || "—")}</span></div>
 
                     <div className="grp-row"><span className="muted">اعزام:</span><span>{g.dispatchAtISO ? g.dispatchAtISO.replace("T", " ") : "—"}</span></div>
                     <div className="grp-row"><span className="muted">پایان:</span><span>{g.finishAtISO ? g.finishAtISO.replace("T", " ") : "—"}</span></div>
@@ -308,13 +337,14 @@ export default function GroupOps() {
                     </div>
 
                     <div className="grp-actions">
-                      <button className="btn small" onClick={() => startEdit(g)}>ویرایش</button>
-                      <button className="btn small danger" onClick={() => remove(g.id)}>حذف</button>
+                      <button className="btn small btn-edit" onClick={() => startEdit(g)}>ویرایش</button>
+                      <button className="btn small btn-archive" onClick={() => archive(g.id)}>بایگانی</button>
+                      <button className="btn small btn-delete" onClick={() => remove(g.id)}>حذف</button>
                     </div>
                   </div>
                 );
               }) : (
-                <div className="empty" style={{ padding: "16px 0" }}>گزارشی ثبت نشده است</div>
+                <div className="empty" style={{ padding: "16px 0" }}>فعلاً گزارشی مطابق فیلتر نیست</div>
               )}
             </div>
           </>
@@ -330,10 +360,7 @@ export default function GroupOps() {
                   <tr key={p.id}>
                     <td>{p.name}</td>
                     <td className="ops">
-                      <button className="btn small" onClick={() => {
-                        const name = window.prompt("ویرایش نام:", p.name);
-                        if (name && name.trim()) setPeople((prev) => prev.map((x) => (x.id === p.id ? { ...x, name: name.trim() } : x)));
-                      }}>ویرایش</button>
+                      <button className="btn small" onClick={() => openEditMember(p)}>ویرایش</button>
                       <button className="btn small danger" onClick={() => setPeople((prev) => prev.filter((x) => x.id !== p.id))}>حذف</button>
                     </td>
                   </tr>
@@ -342,10 +369,7 @@ export default function GroupOps() {
             </table>
 
             <div style={{ marginTop: 8 }}>
-              <button className="btn primary" onClick={() => {
-                const name = window.prompt("نام عضو جدید:");
-                if (name && name.trim()) setPeople((prev) => [{ id: newId(), name: name.trim() }, ...prev]);
-              }}>افزودن عضو</button>
+              <button className="btn primary" onClick={openAddMember}>افزودن عضو</button>
             </div>
           </div>
         )}
@@ -353,97 +377,81 @@ export default function GroupOps() {
         {/* ===== تب گزارش‌ها ===== */}
         {tab === "reports" && (
           <>
-            {/* فیلترهای بالا + خروجی */}
             <form className="dh-toolbar grp-filter" onSubmit={applyRFilters}>
-              <input className="input" placeholder="عنوان گزارش…" value={rFilters.name} onChange={(e) => setRFilters(f => ({ ...f, name: e.target.value }))} />
+              <input className="input" style={{minWidth:180}} placeholder="عنوان گزارش…" value={rFilters.name} onChange={(e) => setRFilters(f => ({ ...f, name: e.target.value }))} />
               <select className="input" value={rFilters.rig} onChange={(e) => setRFilters(f => ({ ...f, rig: e.target.value }))}>
                 <option value="">دکل (همه)</option>
                 {RIGS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
-              <DatePicker
-                value={rFilters.fromObj}
-                onChange={(v) => setRFilters(f => ({ ...f, fromObj: v }))}
-                calendar={persian} locale={persian_fa} format={faFmt}
-                plugins={[<TimePicker position="bottom" />]}
-                inputClass="input" containerClassName="rmdp-rtl"
-              />
-              <DatePicker
-                value={rFilters.toObj}
-                onChange={(v) => setRFilters(f => ({ ...f, toObj: v }))}
-                calendar={persian} locale={persian_fa} format={faFmt}
-                plugins={[<TimePicker position="bottom" />]}
-                inputClass="input" containerClassName="rmdp-rtl"
-              />
+              <DatePicker value={rFilters.fromObj} onChange={(v) => setRFilters(f => ({ ...f, fromObj: v }))} calendar={persian} locale={persian_fa} format={faFmt} plugins={[<TimePicker position="bottom" />]} inputClass="input" containerClassName="rmdp-rtl" />
+              <DatePicker value={rFilters.toObj} onChange={(v) => setRFilters(f => ({ ...f, toObj: v }))} calendar={persian} locale={persian_fa} format={faFmt} plugins={[<TimePicker position="bottom" />]} inputClass="input" containerClassName="rmdp-rtl" />
               <button className="btn primary" type="submit">اعمال فیلتر</button>
               {(rFilters.name || rFilters.rig || rFilters.fromObj || rFilters.toObj) && (
                 <button className="btn" type="button" onClick={clearRFilters}>حذف فیلتر</button>
               )}
               <div className="io-actions">
-                <button type="button" className="btn" onClick={exportReportsCSV}>Excel</button>
-                <button type="button" className="btn" onClick={exportReportsDOC}>Word</button>
+                <button type="button" className="btn" onClick={exportReportsCSV} disabled={!rFilters.applied}>Excel (تجمیعی)</button>
+                <button type="button" className="btn" onClick={exportReportsDOC} disabled={!rFilters.applied}>Word (تجمیعی)</button>
+                <button type="button" className="btn primary" onClick={exportReportsAllCSV} disabled={!rFilters.applied}>Excel (کامل)</button>
+                <button type="button" className="btn primary" onClick={exportReportsAllDOC} disabled={!rFilters.applied}>Word (کامل)</button>
               </div>
             </form>
 
-            {/* جدول‌های گزارش */}
-            <div className="table-wrap" style={{ marginBottom: 10 }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>گزارش</th><th>دکل</th><th>اعزام</th><th>پایان</th><th>مدت (ساعت)</th>
-                    <th>تعداد موضوع</th><th>وضعیت</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredForReports.length ? filteredForReports.map((g) => {
-                    const s = statsOf(g);
-                    return (
-                      <tr key={g.id}>
-                        <td>{g.name}</td>
-                        <td>{g.rig || "—"}</td>
-                        <td>{g.dispatchAtISO ? g.dispatchAtISO.replace("T", " ") : "—"}</td>
-                        <td>{g.finishAtISO ? g.finishAtISO.replace("T", " ") : "—"}</td>
-                        <td>{s.hours}</td>
-                        <td>{s.total}</td>
-                        <td style={{ textAlign: "center" }}>{s.allDone ? "✅" : "—"}</td>
-                      </tr>
-                    );
-                  }) : <tr><td colSpan={7} className="empty">داده‌ای وجود ندارد</td></tr>}
-                </tbody>
-              </table>
-            </div>
+            {!rFilters.applied ? (
+              <div className="empty" style={{padding:"14px 0"}}>
+                برای مشاهده جداول تجمیعی یا گرفتن خروجی کامل، فیلتر را تنظیم و «اعمال فیلتر» را بزنید.
+              </div>
+            ) : (
+              <>
+                <div className="table-wrap" style={{ marginBottom: 10 }}>
+                  <table>
+                    <thead><tr><th>نام نفر</th><th>تعداد مأموریت</th><th>ساعات</th><th>هزینه (تومان)</th></tr></thead>
+                    <tbody>
+                      {peopleAgg.length ? peopleAgg.map((r) => (
+                        <tr key={r.name}>
+                          <td>{r.name}</td>
+                          <td>{r.count}</td>
+                          <td>{r.hours}</td>
+                          <td>{money(r.cost)}</td>
+                        </tr>
+                      )) : <tr><td colSpan={4} className="empty">داده‌ای وجود ندارد</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
 
-            <div className="table-wrap" style={{ marginBottom: 10 }}>
-              <table>
-                <thead><tr><th>نام نفر</th><th>تعداد مأموریت</th><th>ساعات</th><th>هزینه (تومان)</th></tr></thead>
-                <tbody>
-                  {peopleAgg.length ? peopleAgg.map((r) => (
-                    <tr key={r.name}>
-                      <td>{r.name}</td>
-                      <td>{r.count}</td>
-                      <td>{r.hours}</td>
-                      <td>{money(r.cost)}</td>
-                    </tr>
-                  )) : <tr><td colSpan={4} className="empty">هنوز گزارشی نیست</td></tr>}
-                </tbody>
-              </table>
-            </div>
+                <div className="table-wrap" style={{ marginBottom: 10 }}>
+                  <table>
+                    <thead><tr><th>ماه</th><th>نام نفر</th><th>تعداد مأموریت</th><th>ساعات</th><th>هزینه (تومان)</th></tr></thead>
+                    <tbody>
+                      {peopleMonthly.length ? peopleMonthly.map((r, idx) => (
+                        <tr key={idx}>
+                          <td>{r.month}</td>
+                          <td>{r.name}</td>
+                          <td>{r.count}</td>
+                          <td>{r.hours}</td>
+                          <td>{money(r.cost)}</td>
+                        </tr>
+                      )) : <tr><td colSpan={5} className="empty">داده‌ای وجود ندارد</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
 
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>ماه</th><th>نام نفر</th><th>تعداد مأموریت</th><th>ساعات</th><th>هزینه (تومان)</th></tr></thead>
-                <tbody>
-                  {peopleMonthly.length ? peopleMonthly.map((r, idx) => (
-                    <tr key={idx}>
-                      <td>{r.month}</td>
-                      <td>{r.name}</td>
-                      <td>{r.count}</td>
-                      <td>{r.hours}</td>
-                      <td>{money(r.cost)}</td>
-                    </tr>
-                  )) : <tr><td colSpan={5} className="empty">داده‌ای وجود ندارد</td></tr>}
-                </tbody>
-              </table>
-            </div>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>دکل</th><th>تعداد مأموریت</th><th>مجموع ساعات</th></tr></thead>
+                    <tbody>
+                      {rigsAgg.length ? rigsAgg.map((r) => (
+                        <tr key={r.rig}>
+                          <td>{r.rig}</td>
+                          <td>{r.count}</td>
+                          <td>{r.hours}</td>
+                        </tr>
+                      )) : <tr><td colSpan={3} className="empty">داده‌ای وجود ندارد</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
@@ -459,6 +467,17 @@ export default function GroupOps() {
           onSave={saveGroup}
         />
       )}
+
+      {/* مودال افزودن/ویرایش نام عضو (سفید و کاستوم) */}
+      {showNamePrompt && (
+        <NamePrompt
+          title={editingPersonId == null ? "نام عضو جدید:" : "ویرایش نام عضو:"}
+          value={nameDraft}
+          onChange={setNameDraft}
+          onCancel={() => setShowNamePrompt(false)}
+          onSave={saveNamePrompt}
+        />
+      )}
     </div>
   );
 }
@@ -470,12 +489,15 @@ function GroupModal({ rigs, people, setPeople, initial, onClose, onSave }) {
   const [lead, setLead] = useState(initial?.lead || "");
   const [members, setMembers] = useState(initial?.members || []);
 
+  const [vehicleType, setVehicleType] = useState(initial?.vehicleType || "");
+  const [vehicleOwner, setVehicleOwner] = useState(initial?.vehicleOwner || "");
+
   const [dispatchObj, setDispatchObj] = useState(null);
   const [finishObj, setFinishObj] = useState(null);
   const [dispatchAtISO, setDispatchAtISO] = useState(initial?.dispatchAtISO || "");
   const [finishAtISO, setFinishAtISO] = useState(initial?.finishAtISO || "");
 
-  // tasks: { id, subject, desc } — همگی «تکمیل‌شده»
+  // tasks: { id, subject, desc } — همگی «done»
   const [tasks, setTasks] = useState(
     (initial?.tasks || []).length
       ? initial.tasks.map(t => ({ id: t.id, subject: t.subject ?? t.title ?? "", desc: t.desc ?? "" }))
@@ -527,6 +549,27 @@ function GroupModal({ rigs, people, setPeople, initial, onClose, onSave }) {
             </div>
           </div>
 
+          {/* خودرو */}
+          <div className="row">
+            <div className="col">
+              <div className="label">نوع خودرو</div>
+              <select className="input" value={vehicleType} onChange={(e)=>setVehicleType(e.target.value)}>
+                <option value="">— انتخاب کنید —</option>
+                <option value="سواری">سواری</option>
+                <option value="وانت">وانت</option>
+              </select>
+            </div>
+            <div className="col">
+              <div className="label">مالکیت خودرو</div>
+              <select className="input" value={vehicleOwner} onChange={(e)=>setVehicleOwner(e.target.value)}>
+                <option value="">— انتخاب کنید —</option>
+                <option value="شرکتی">شرکتی</option>
+                <option value="استیجاری">استیجاری</option>
+              </select>
+            </div>
+            <div className="col"></div>
+          </div>
+
           <div className="row">
             <div className="col">
               <div className="label">اعضا</div>
@@ -559,7 +602,7 @@ function GroupModal({ rigs, people, setPeople, initial, onClose, onSave }) {
             </div>
           </div>
 
-          {/* جدول کارها: موضوع + شرح خرابی + حذف */}
+          {/* جدول کارها */}
           <div className="row">
             <div className="col" style={{ gridColumn: "1 / -1" }}>
               <div className="label">موضوع‌های عملیات (وضعیت: تکمیل‌شده)</div>
@@ -622,20 +665,23 @@ function GroupModal({ rigs, people, setPeople, initial, onClose, onSave }) {
                 rig,
                 lead,
                 members,
+                vehicleType,
+                vehicleOwner,
                 dispatchAtISO,
                 finishAtISO,
                 tasks: tasks
                   .filter((t) => (t.subject || "").trim().length > 0 || (t.desc || "").trim().length > 0)
                   .map((t) => ({ id: t.id, subject: (t.subject || "").trim(), desc: (t.desc || "").trim(), status: "done" })),
+                archived: false,
               })
             }
           >ذخیره</button>
         </div>
 
-        {/* انتخاب اعضا (ستونی + دکمه آبی انتخاب) */}
+        {/* انتخاب اعضا — سفید و کاستوم */}
         {showPicker && (
-          <div className="dh-backdrop" style={{ background: "rgba(0,0,0,.1)" }} onClick={(e) => { if (e.target === e.currentTarget) setShowPicker(false); }}>
-            <div className="dh-modal dh-modal--small" role="dialog" aria-modal="true">
+          <div className="dh-backdrop member-modal" onClick={(e) => { if (e.target === e.currentTarget) setShowPicker(false); }}>
+            <div className="dh-modal dh-modal--small member-card" role="dialog" aria-modal="true">
               <div className="dh-modal__hdr">
                 <div><b>انتخاب اعضا</b></div>
                 <button className="dh-close" onClick={() => setShowPicker(false)}>✕</button>
@@ -647,11 +693,11 @@ function GroupModal({ rigs, people, setPeople, initial, onClose, onSave }) {
                     const selected = members.includes(p.name);
                     return (
                       <li key={p.id} className="member-item">
-                        <span>{p.name}</span>
+                        <span className="member-name">{p.name}</span>
                         {!selected ? (
-                          <button type="button" className="btn small primary" onClick={() => toggleMember(p.name)}>انتخاب</button>
+                          <button type="button" className="btn primary member-choose" onClick={() => toggleMember(p.name)}>انتخاب</button>
                         ) : (
-                          <button type="button" className="btn small danger" onClick={() => toggleMember(p.name)}>حذف از لیست</button>
+                          <button type="button" className="btn danger member-choose" onClick={() => toggleMember(p.name)}>حذف از لیست</button>
                         )}
                       </li>
                     );
@@ -665,11 +711,47 @@ function GroupModal({ rigs, people, setPeople, initial, onClose, onSave }) {
               </div>
 
               <div className="dh-modal__ftr">
-                <button className="btn" onClick={() => setShowPicker(false)}>تمام</button>
+                <button className="btn primary" onClick={() => setShowPicker(false)}>تمام</button>
               </div>
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ==== مدال نام عضو (افزودن/ویرایش) – سفید و کاستوم ==== */
+function NamePrompt({ title, value, onChange, onCancel, onSave }) {
+  return (
+    <div
+      className="dh-backdrop member-modal"
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+    >
+      <div className="dh-modal dh-modal--small member-card" role="dialog" aria-modal="true">
+        <div className="dh-modal__hdr">
+          <div><b>{title}</b></div>
+          <button className="dh-close" onClick={onCancel}>✕</button>
+        </div>
+
+        <div className="form" style={{ paddingTop: 16 }}>
+          <input
+            autoFocus
+            className="input"
+            placeholder="مثلاً: علی رضایی"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSave();
+              if (e.key === "Escape") onCancel();
+            }}
+          />
+        </div>
+
+        <div className="dh-modal__ftr" style={{ display: "flex", gap: 8, justifyContent: "flex-start" }}>
+          <button className="btn primary" onClick={onSave}>ذخیره</button>
+          <button className="btn" onClick={onCancel}>انصراف</button>
+        </div>
       </div>
     </div>
   );
