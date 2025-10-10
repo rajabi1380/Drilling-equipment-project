@@ -21,12 +21,36 @@
 .alert.error .alert-title { color:#b91c1c; }
 
 /* ---- Tabs ---- */
-.tabs { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.tab {
-  height:32px; padding:0 12px; border:1px solid #e5e7eb; background:#f8fafc;
-  border-radius:8px; cursor:pointer;
+.tabs{
+  display:flex; align-items:center; gap:8px; margin-bottom:8px;
+  justify-content:center;                 /* وسط‌چین */
 }
-.tab.is-active { background:#1d4ed8; border-color:#1d4ed8; }
+.tab{
+  /* بزرگ‌تر و تیترمانند */
+  height: 40px;                           /* ↑ قبلاً 32px */
+  padding: 0 16px;                        /* ↑ کمی بیشتر */
+  font-size: 18px;                        /* ↑ افزایش اندازه فونت */
+  font-weight: 700;
+
+  border:1px solid #e5e7eb;
+  background:#f8fafc;
+  border-radius:8px; cursor:pointer;
+
+  /* ترنزیشن نرم‌تر */
+  transition:
+    background-color .28s ease,
+    color .28s ease,
+    border-color .28s ease,
+    box-shadow .28s ease,
+    transform .18s ease;
+}
+.tab:hover{ background:#f1f5f9; }
+.tab:active{ transform: translateY(1px); }
+
+.tab.is-active{
+  background:#1d4ed8; border-color:#1d4ed8;
+  
+}
 .divider { color:#cbd5e1; }
 
 /* ---- Filter bar ---- */
@@ -52,10 +76,10 @@ tbody tr:hover { background:#f8fafc; }
 td.empty, .empty { text-align:center; color:#64748b; padding:12px; }
 
 /* row accents */
-.row-in   { background: #f0f9ff; }      /* آبی خیلی کم‌رنگ برای ورود */
-.row-out  { background: #fff1f2; }      /* صورتی خیلی کم‌رنگ برای خروج */
-.row-rig  { background: #fefce8; }      /* زرد خیلی کم‌رنگ برای دکل به دکل */
-.row-low  { background: #fff7ed; }      /* کمبود موجودی */
+.row-in   { background: #f0f9ff; }
+.row-out  { background: #fff1f2; }
+.row-rig  { background: #fefce8; }
+.row-low  { background: #fff7ed; }
 .qty-badge {
   display:inline-flex; align-items:center; justify-content:center;
   min-width:28px; height:24px; padding:0 8px; border-radius:999px;
@@ -67,12 +91,14 @@ td.empty, .empty { text-align:center; color:#64748b; padding:12px; }
 .pagination { display:flex; align-items:center; gap:8px; padding:8px 0; }
 .pg-btn {
   height:30px; padding:0 10px; border:1px solid #e5e7eb; background:#f8fafc; border-radius:8px; cursor:pointer;
+  transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 .pg-btn:hover { background:#eef2f7; }
 
 /* ---- Generic controls (match ModalBase buttons/inputs) ---- */
 .input {
   height: 36px; padding: 0 10px; border: 1px solid #e5e7eb; border-radius: 8px; background:#fff;
+  transition: box-shadow .25s ease, border-color .25s ease;
 }
 textarea.input { height: 90px; padding-top: 8px; padding-bottom: 8px; }
 .input.checkbox { display:flex; align-items:center; gap:6px; }
@@ -80,8 +106,10 @@ textarea.input { height: 90px; padding-top: 8px; padding-bottom: 8px; }
 
 .btn {
   height: 32px; padding:0 10px; border:1px solid #e5e7eb; background:#f8fafc; border-radius:8px; cursor:pointer;
+  transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease, transform .18s ease;
 }
 .btn:hover { background:#eef2f7; }
+.btn:active{ transform: translateY(1px); }
 .btn.small { height: 28px; font-size:12px; padding:0 8px; }
 .btn.primary { background:#2563eb; color:#fff; border-color:#2563eb; }
 .btn.primary:hover { background:#1d4ed8; }
@@ -101,7 +129,7 @@ textarea.input { height: 90px; padding-top: 8px; padding-bottom: 8px; }
 /* ===== Strong Black Focus (final) ===== */
 :where(.tab, .btn, .pg-btn, .input, textarea.input, select.input){
   outline: none;
-  transition: box-shadow .16s ease, border-color .16s ease, color .16s ease, background-color .16s ease;
+  transition: box-shadow .28s ease, border-color .28s ease, color .28s ease, background-color .28s ease;
 }
 
 /* Buttons & Tabs */
@@ -139,4 +167,17 @@ select.input:focus-visible{
   select.input:focus-visible{
     box-shadow:0 0 0 3px rgba(0,0,0,.18) !important;
   }
+}
+
+/* ---- محتوای هر تب: ورود نرم هنگام سوییچ ---- */
+/* هر بخشی که بعد از تعویض تب mount می‌شود، با این انیمیشن وارد می‌شود */
+.io-card .table-wrap,
+.io-card .io-filter,
+.io-card .pagination,
+.io-card .total-stock {
+  animation: fadeSlide .28s ease both;
+}
+@keyframes fadeSlide{
+  from { opacity:0; transform: translateY(6px); }
+  to   { opacity:1; transform: translateY(0); }
 }

@@ -1,34 +1,32 @@
 /* ========= Downhole (overrides on top of base.css) ========= */
 
-/* Tokens (قابل تغییر) */
-.dh-page {
-  --dh-radius: 12px;
-  --dh-border: #e5e7eb;
-  --dh-bg: #fff;
-  --dh-bg-soft: #fafafa;
-  --dh-text-muted: #6b7280;
-  --dh-accent: #3b82f6;
-  --dh-success: #10b981;
-  --dh-danger: #ef4444;
-  --dh-warn: #f59e0b;
-  --dh-shadow: 0 20px 35px rgba(0,0,0,.15);
-
-  /* کنترل راحت ارتفاع اینپوت‌ها و هم‌راستایی آیکن */
-  --dh-input-h: 38px;         /* ارتفاع پیش‌فرض */
-  --dh-input-pad-x: 10px;
-  --dh-gap: 8px;
+/* Tokens */
+.dh-page{
+  --dh-radius:12px;
+  --dh-border:#e5e7eb;
+  --dh-bg:#fff;
+  --dh-bg-soft:#fafafa;
+  --dh-text-muted:#6b7280;
+  --dh-accent:#3b82f6;
+  --dh-success:#10b981;
+  --dh-danger:#ef4444;
+  --dh-warn:#f59e0b;
+  --dh-shadow:0 20px 35px rgba(0,0,0,.15);
+  --dh-input-h:38px;
+  --dh-input-pad-x:10px;
+  --dh-gap:8px;
 }
 
 /* صفحه و کارت */
-.dh-page { padding: 16px; }
-.dh-card {
-  background: var(--dh-bg);
-  border: 1px solid var(--dh-border);
-  border-radius: var(--dh-radius);
-  padding: 12px;
+.dh-page{ padding:16px; }
+.dh-card{
+  background:var(--dh-bg);
+  border:1px solid var(--dh-border);
+  border-radius:var(--dh-radius);
+  padding:12px;
 }
 
-/* دکمه‌ها – بر اساس base.css، فقط تم رنگی */
+/* دکمه‌ها */
 .btn{
   border:1px solid var(--dh-border);
   background:#fff;
@@ -36,6 +34,7 @@
   padding:8px 12px;
   cursor:pointer;
   transition:filter .15s, background .15s, transform .05s;
+  white-space:nowrap; max-width:100%;
 }
 .btn:hover{ background:#f9fafb; }
 .btn:active{ transform:scale(.99); }
@@ -47,20 +46,59 @@
 .btn.primary:hover,.btn.success:hover,.btn.danger:hover,.btn.warn:hover{ filter:brightness(.97); }
 .btn.solid{ background:var(--dh-accent); color:#fff; border-color:var(--dh-accent); }
 
-/* سِگمنت تب‌ها */
-.segbar{
-  display:flex; gap:var(--dh-gap); align-items:center;
-  padding:6px; background:#fff; border:1px solid var(--dh-border);
-  border-radius:var(--dh-radius); margin-bottom:10px;
+/* ===== Tabs Header (وسط‌چین و شبیه تیتر) ===== */
+.tabs-titlebar{
+  display:flex; justify-content:center; align-items:center;
+  gap:12px;
+  padding:10px 0 12px;
+  margin-bottom:8px;
+  background:transparent; border:0;
 }
-.seg{
-  padding:8px 12px; border:1px solid var(--dh-border);
-  background:#fff; border-radius:10px; cursor:pointer;
+
+/* تیتر تب‌ها: سفید + بوردر خاکستری، فونت درشت */
+.tabbtn{
+  appearance:none;
+  background:#fff;
+  border:1px solid #e5e7eb;  border-radius:12px;
+  padding:8px 16px;
+  font-weight:800;
+  font-size:20px;
+  line-height:1.35;
+  color:#111827;
+  cursor:pointer;
+  transition:
+    background-color .34s ease,
+    color .34s ease,
+    border-color .34s ease,
+    box-shadow .34s ease,
+    transform .18s ease;
 }
-.seg.is-on{ background:#111827; color:#fff; border-color:#111827; }
-.seg-mini{ display:inline-flex; gap:4px; padding:2px; background:#f3f4f6; border-radius:10px; }
-.seg2{ border:0; background:transparent; padding:6px 10px; border-radius:8px; cursor:pointer; }
-.seg2.on{ background:#0ea5e9; color:#fff; }
+.tabbtn:hover{ background:#f8fafc; }
+.tabbtn:active{ transform:translateY(1px); }
+
+/* فعال + فوکوس: داخل آبی خیلی ملایم، بوردر مشکی، هاله لطیف */
+.tabbtn.is-on,
+.tabbtn[aria-selected="true"]{
+  background:#eef2ff;
+
+  color:#111827;
+}
+.tabbtn:focus,
+.tabbtn:focus-visible{
+  outline:none;
+  background:#eef2ff;
+  border-color:#000;
+  box-shadow:0 0 0 2px rgba(59,130,246,.18);
+}
+
+/* جداکننده بین تب‌ها */
+.tabs-titlebar .divider{
+  width:1px; height:26px; background:#e5e7eb; display:inline-block; margin:0 10px;
+}
+@media (max-width:520px){
+  .tabbtn{ font-size:16px; padding:6px 12px; }
+  .tabs-titlebar .divider{ height:24px; }
+}
 
 /* سکشن‌ها */
 .dh-section{ margin-top:12px; }
@@ -91,21 +129,15 @@ tbody tr.need-fix td{ background:#fff7ed; }
 .pg-btn[disabled]{ opacity:.5; cursor:not-allowed; }
 
 /* مودال‌ها */
-.dh-backdrop{
-  position:fixed; inset:0; background:rgba(0,0,0,.25);
-  display:flex; align-items:center; justify-content:center; z-index:1200;
-}
+.dh-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; z-index:1200; }
 .dh-modal{
   width:min(960px,96vw); max-height:90vh; overflow:auto;
   background:#fff; border:1px solid var(--dh-border); border-radius:var(--dh-radius); padding:10px;
   box-shadow: var(--dh-shadow);
 }
-.dh-modal--wide{ max-width: 980px; }
+.dh-modal--wide{ max-width:980px; }
 .dh-modal--small{ width:min(520px,92vw); }
-.dh-modal__hdr{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:6px 4px 10px; font-weight:700;
-}
+.dh-modal__hdr{ display:flex; align-items:center; justify-content:space-between; padding:6px 4px 10px; font-weight:700; }
 .dh-modal__ftr{ display:flex; justify-content:flex-end; gap:var(--dh-gap); margin-top:10px; }
 .dh-close{ border:0; background:#fff; font-size:18px; cursor:pointer; border-radius:8px; padding:4px 8px; }
 .dh-close:hover{ background:#f3f4f6; }
@@ -113,21 +145,21 @@ tbody tr.need-fix td{ background:#fff7ed; }
 /* فرم‌ها */
 .form{ display:flex; flex-direction:column; gap:var(--dh-gap); margin-top:8px; }
 .form--tight .row{ gap:12px; }
-.row{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:var(--dh-gap); }
+.row{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--dh-gap); }
 .col{ display:flex; flex-direction:column; gap:4px; }
 .label{ font-size:13px; color:#374151; margin-bottom:4px; }
 
-/* فیلدها (هم‌راستایی آیکن با سایز) */
+/* فیلدها */
 .input{
   border:1px solid var(--dh-border);
   background:#fff; border-radius:10px;
-  height: var(--dh-input-h);
-  padding: 0 var(--dh-input-pad-x);
+  height:var(--dh-input-h);
+  padding:0 var(--dh-input-pad-x);
   width:100%;
-  line-height: calc(var(--dh-input-h) - 2px); /* دقیقاً وسط */
+  line-height:calc(var(--dh-input-h) - 2px);
 }
 .input.err{ border-color:var(--dh-danger); box-shadow:0 0 0 2px rgba(239,68,68,.12); }
-.input--sm{ --dh-input-h: 34px; }   /* اگر جمع‌وجورتر خواستی */
+.input--sm{ --dh-input-h:34px; }
 .unit-wide{ width:100%; }
 
 /* زیرنویس «الزامی» */
@@ -142,19 +174,10 @@ tbody tr.need-fix td{ background:#fff7ed; }
 .pick-btn:hover{ background:#f9fafb; }
 .pick-btn:active{ transform:scale(.97); }
 
-/* سایز + آیکن دقیقاً هم‌راستا و کنار هم */
-.size-with-icon{
-  display: inline-flex;
-  align-items: center;           /* آیکن و اینپوت وسط عمودی */
-  gap: 6px;
-}
+/* سایز + آیکن */
+.size-with-icon{ display:inline-flex; align-items:center; gap:6px; }
 .size-with-icon .input{ padding-inline-end: var(--dh-input-pad-x); }
-.finger-ico{
-  width: 18px; height: 18px;     /* آیکن کمی کوچک‌تر از ارتفاع فیلد */
-  color:#64748b; opacity:.9;
-  flex: 0 0 auto;
-  translate: 0 1px;              /* ریزتنظیم برای خط-baseline */
-}
+.finger-ico{ width:18px; height:18px; color:#64748b; opacity:.9; flex:0 0 auto; translate:0 1px; }
 
 /* انتخاب‌های چندگانه */
 .chips{ display:flex; flex-wrap:wrap; gap:8px; }
@@ -166,18 +189,16 @@ tbody tr.need-fix td{ background:#fff7ed; }
 .chip.on{ background:#eef2ff; border-color:#c7d2fe; }
 .chip input{ display:none; }
 
-/* DatePicker هماهنگ با input */
+/* DatePicker */
 .rmdp-rtl .rmdp-input{
   width:100%; border:1px solid var(--dh-border); background:#fff; border-radius:10px;
-  height: var(--dh-input-h);
-  line-height: calc(var(--dh-input-h) - 2px);
-  padding: 0 var(--dh-input-pad-x);
+  height:var(--dh-input-h);
+  line-height:calc(var(--dh-input-h) - 2px);
+  padding:0 var(--dh-input-pad-x);
 }
-.rmdp-rtl .rmdp-input:focus{
-  outline:none; border-color:#c7d2fe; box-shadow:0 0 0 3px rgba(37,99,235,.15);
-}
+.rmdp-rtl .rmdp-input:focus{ outline:none; border-color:#c7d2fe; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
 
-/* آرشیو/فیلتر تاشونده */
+/* آرشیو */
 .arch-filter{
   border:1px solid var(--dh-border); border-radius:var(--dh-radius);
   padding:8px 12px; background:var(--dh-bg-soft); margin-bottom:8px;
@@ -191,11 +212,41 @@ tbody tr.need-fix td{ background:#fff7ed; }
   padding:10px 12px; margin-bottom:12px; font-size:13px;
 }
 
-.table-toolbar{ display:flex; gap:8px; align-items:center; }
+/* ابزارهای جداول */
+.table-toolbar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+/* خروجی‌ها زیر دکمه‌های فیلتر */
+.btnrow,.io-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.btnrow > :nth-child(n+3), .io-actions > :nth-child(n+3){ flex-basis:100%; display:flex; gap:8px; }
+.btnrow > :nth-child(n+3) > *, .io-actions > :nth-child(n+3) > *{ flex:0 1 auto; max-width:100%; }
 
 /* ریسپانسیو */
 @media (max-width:900px){
   .row{ grid-template-columns:1fr; }
   .dh-modal{ width:min(96vw,960px); }
   .arch-info{ grid-template-columns:repeat(2,1fr); }
+}
+
+/* ===== انیمیشن نرم هنگام سوییچ تب‌ها ===== */
+.dh-card .dh-toolbar,
+.dh-card .dh-section,
+.dh-card .io-filter,
+.dh-card .table-wrap,
+.dh-card .pagination,
+.dh-card .muted{
+  animation: dhFadeSlide .34s ease both;
+}
+@keyframes dhFadeSlide{
+  from{ opacity:0; transform:translateY(6px); }
+  to  { opacity:1; transform:translateY(0); }
+}
+@media (prefers-reduced-motion: reduce){
+  .dh-card .dh-toolbar,
+  .dh-card .dh-section,
+  .dh-card .io-filter,
+  .dh-card .table-wrap,
+  .dh-card .pagination,
+  .dh-card .muted{
+    animation:none;
+  }
 }

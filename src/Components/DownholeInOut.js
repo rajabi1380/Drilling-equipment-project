@@ -52,6 +52,31 @@ const CONSUMABLES = ["پیچ","مهره","واشر","اورینگ","گریس","�
 
 const newId  = () => Number(`${Date.now()}${Math.floor(Math.random()*1e3)}`);
 
+/* ----- تیتر کوچکِ وسط‌چین برای تب‌ها (هدر ناوبری) ----- */
+function TabsHeader({ tab, setTab }) {
+  return (
+    <div className="tabs-titlebar" role="tablist" aria-label="ناوبری">
+      <button
+        className={`tabbtn ${tab === "inout" ? "is-on" : ""}`}
+        role="tab"
+        aria-selected={tab==="inout"}
+        onClick={()=>setTab("inout")}
+      >
+        ورود و خروج
+      </button>
+      <span className="divider" aria-hidden />
+      <button
+        className={`tabbtn ${tab === "rig" ? "is-on" : ""}`}
+        role="tab"
+        aria-selected={tab==="rig"}
+        onClick={()=>setTab("rig")}
+      >
+        دکل به دکل
+      </button>
+    </div>
+  );
+}
+
 /* ===== کامپوننت اصلی ===== */
 export default function DownholeInOut() {
   // Boot
@@ -232,16 +257,14 @@ export default function DownholeInOut() {
     <div className="dh-page" dir="rtl">
       <div className="dh-card">
 
-        {/* تب‌ها */}
-        <div className="segbar">
-          <button className={`seg ${tab==="inout" ? "is-on" : ""}`} onClick={()=>setTab("inout")}>ورود و خروج</button>
-          <button className={`seg ${tab==="rig"   ? "is-on" : ""}`} onClick={()=>setTab("rig")}>دکل به دکل</button>
-        </div>
+        {/* تیتر تب‌ها (کوچک، وسط‌چین) — بالای همه چیز */}
+        <TabsHeader tab={tab} setTab={setTab} />
 
         {/* محتوای تب‌ها */}
         {tab === "inout" ? (
           <>
-            <div className="dh-toolbar">
+            {/* نوار اکشن‌ها */}
+            <div className="dh-toolbar" style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
               <button type="button" className="btn success" onClick={() => setShowIn(true)}>ثبت ورود</button>
               <button type="button" className="btn" onClick={() => setShowArchive(true)}>نمایش آرشیو</button>
               <div className="muted" style={{ marginInlineStart: 8 }}>
@@ -263,7 +286,6 @@ export default function DownholeInOut() {
 
                   {expanded[u.id] && (
                     <>
-                      {/* خروجی مخصوص همین واحد از لیست باز */}
                       <div className="table-toolbar">
                         <ExportButtons
                           variant="compact"
@@ -338,13 +360,14 @@ export default function DownholeInOut() {
           </>
         ) : (
           <>
-            <div className="dh-toolbar">
+            {/* نوار اکشنِ دکل↔دکل */}
+            <div className="dh-toolbar" style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
               <button type="button" className="btn warn" onClick={() => { setEditingMove(null); setShowRigModal(true); }}>ثبت دکل به دکل</button>
             </div>
 
             {/* نوار فیلتر سراسری دکل↔دکل */}
             <div className="io-filter" style={{marginTop:8}}>
-              <div className="io-filter__fields" style={{gridTemplateColumns:"repeat(6, 1fr)"}}>
+              <div className="io-filter__fields" style={{display:"grid", gap:8, gridTemplateColumns:"repeat(6, 1fr)"}}>
                 <select className="input" value={rigFilter.unitId}
                         onChange={e=>setRigFilter(s=>({...s,unitId:e.target.value}))}>
                   <option value="">واحد (همه)</option>
@@ -364,46 +387,49 @@ export default function DownholeInOut() {
                   <option value="">به دکل (همه)</option>
                   {RIGS.map(r=><option key={r} value={r}>{r}</option>)}
                 </select>
-                <div className="f-item">
-                  <div className="btnrow" style={{display:"flex",gap:8}}>
+
+                {/* ردیفِ دکمه‌های فیلتر */}
+                <div className="f-item" style={{display:"flex", alignItems:"center"}}>
+                  <div className="btnrow" style={{display:"flex", gap:8, flexWrap:"wrap"}}>
                     <button className="btn primary" onClick={()=> setRigFilterOn(true)}>اعمال فیلتر</button>
                     <button className="btn" onClick={()=>{
                       setRigFilter({ unitId:"", qName:"", qCode:"", fromRig:"", toRig:"", reqFrom:null, reqTo:null, arrFrom:null, arrTo:null });
                       setRigFilterOn(false);
                     }}>حذف فیلتر</button>
-
-                    {/* خروجی‌های دکل↔دکل (کل نتایج/با فیلترهای جاری) */}
-                    <ExportButtons
-                      variant="compact"
-                      getExport={()=>{
-                        const units = rigUnitsToRender; // بر اساس انتخاب واحد
-                        const all = units.flatMap(u =>
-                          (applyRigPredicate(movesByUnit[u.id] || []))
-                            .map(m => ({ unitTitle: u.title, ...m }))
-                        );
-                        const headers = ["واحد","نام تجهیز","کد","سایز","از دکل","به دکل","تاریخ/ساعت درخواست","تاریخ/ساعت رسیدن","توضیحات"];
-                        const rows = all.map(r => ({
-                          "واحد": r.unitTitle || "",
-                          "نام تجهیز": r.name || "",
-                          "کد": r.code || "",
-                          "سایز": r.size || "",
-                          "از دکل": r.fromRig || "",
-                          "به دکل": r.toRig || "",
-                          "تاریخ/ساعت درخواست": r.requestAtISO ? fmtFa(r.requestAtISO) : "",
-                          "تاریخ/ساعت رسیدن":   r.arriveAtISO  ? fmtFa(r.arriveAtISO)  : "",
-                          "توضیحات": r.note || "",
-                        }));
-                        const unitSuffix = rigFilterOn && rigFilter.unitId
-                          ? `_${rigFilter.unitId}` : "_all";
-                        return {
-                          filename: `rig_moves${unitSuffix}_${new Date().toISOString().slice(0,10)}`,
-                          title: "گزارش انتقال دکل↔دکل",
-                          headers, rows
-                        };
-                      }}
-                    />
                   </div>
                 </div>
+              </div>
+
+              {/* خروجی‌ها */}
+              <div className="io-actions" style={{display:"flex", gap:8, flexWrap:"wrap", marginTop:8}}>
+                <ExportButtons
+                  variant="compact"
+                  getExport={()=>{
+                    const units = rigUnitsToRender;
+                    const all = units.flatMap(u =>
+                      (applyRigPredicate(movesByUnit[u.id] || []))
+                        .map(m => ({ unitTitle: u.title, ...m }))
+                    );
+                    const headers = ["واحد","نام تجهیز","کد","سایز","از دکل","به دکل","تاریخ/ساعت درخواست","تاریخ/ساعت رسیدن","توضیحات"];
+                    const rows = all.map(r => ({
+                      "واحد": r.unitTitle || "",
+                      "نام تجهیز": r.name || "",
+                      "کد": r.code || "",
+                      "سایز": r.size || "",
+                      "از دکل": r.fromRig || "",
+                      "به دکل": r.toRig || "",
+                      "تاریخ/ساعت درخواست": r.requestAtISO ? fmtFa(r.requestAtISO) : "",
+                      "تاریخ/ساعت رسیدن":   r.arriveAtISO  ? fmtFa(r.arriveAtISO)  : "",
+                      "توضیحات": r.note || "",
+                    }));
+                    const unitSuffix = rigFilterOn && rigFilter.unitId ? `_${rigFilter.unitId}` : "_all";
+                    return {
+                      filename: `rig_moves${unitSuffix}_${new Date().toISOString().slice(0,10)}`,
+                      title: "گزارش انتقال دکل↔دکل",
+                      headers, rows
+                    };
+                  }}
+                />
               </div>
 
               <div className="muted" style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -432,7 +458,6 @@ export default function DownholeInOut() {
 
                   {expanded[key] && (
                     <>
-                      {/* خروجی مخصوص همین واحد */}
                       <div className="table-toolbar">
                         <ExportButtons
                           variant="compact"

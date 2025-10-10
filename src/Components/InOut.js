@@ -63,7 +63,7 @@ const mapRigForExport = (rows) =>
       "سایز": r.size || "",
       "دکل مبدأ": r.rigFrom || "",
       "دکل مقصد": r.rigTo || "",
-      "تاریخ درخواست": r.reqAtISO ? fmtFa(r.reqAtISO) : "",
+      "תاریخ درخواست": r.reqAtISO ? fmtFa(r.reqAtISO) : "",
       "تاریخ رسیدن": r.arriveAtISO ? fmtFa(r.arriveAtISO) : "",
       "نام درخواست‌کننده": r.requester || "",
       "نام بازرس": r.inspector || "",
@@ -250,6 +250,7 @@ export default function InOut() {
   return (
     <div className="io-page" dir="rtl">
       <div className="io-card">
+
         {/* هشدار کمبود موجودی */}
         {lowStockItems.length > 0 && (
           <div className="alert warn">
@@ -267,13 +268,60 @@ export default function InOut() {
           </div>
         )}
 
-        {/* تب‌ها */}
-        <div className="tabs">
-          <button className={`tab ${active === "inout" ? "is-active" : ""}`} onClick={() => { setActive("inout"); setPage(1); }}>ورود و خروج</button>
-          <span className="divider">|</span>
-          <button className={`tab ${active === "rig" ? "is-active" : ""}`} onClick={() => { setActive("rig"); setPage(1); }}>دکل به دکل</button>
-          <span className="divider">|</span>
-          <button className={`tab ${active === "inventory" ? "is-active" : ""}`} onClick={() => { setActive("inventory"); setPage(1); }}>موجودی هر قطعه</button>
+        {/* تب‌ها — وسط‌چین با inline style (بدون تغییر CSS) */}
+        <div
+          className="tabs"
+          role="tablist"
+          aria-label="ناوبری"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 0,
+            margin: "6px 0 10px"
+          }}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={active === "inout"}
+            className={`tab ${active === "inout" ? "is-active" : ""}`}
+            onClick={() => { setActive("inout"); setPage(1); }}
+          >
+            ورود و خروج
+          </button>
+
+          <span
+            aria-hidden
+            className="divider"
+            style={{ width: 1, height: 22, background: "#e5e7eb", display: "inline-block", margin: "0 12px" }}
+          />
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={active === "rig"}
+            className={`tab ${active === "rig" ? "is-active" : ""}`}
+            onClick={() => { setActive("rig"); setPage(1); }}
+          >
+            دکل به دکل
+          </button>
+
+          <span
+            aria-hidden
+            className="divider"
+            style={{ width: 1, height: 22, background: "#e5e7eb", display: "inline-block", margin: "0 12px" }}
+          />
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={active === "inventory"}
+            className={`tab ${active === "inventory" ? "is-active" : ""}`}
+            onClick={() => { setActive("inventory"); setPage(1); }}
+          >
+            موجودی هر قطعه
+          </button>
         </div>
 
         {/* فیلتر مشترک */}
