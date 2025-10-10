@@ -52,7 +52,7 @@ export default function Sidebar({ open, onClose }) {
 
              
                  <NavLink
-                to="/downhole/repair"
+                to="/downhole/groupops"
                 className={({ isActive }) =>
                   "sb-subitem" + (isActive ? " is-active" : "")
                 }

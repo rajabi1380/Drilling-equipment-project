@@ -4,7 +4,7 @@ import { matchPath } from "react-router-dom";
 const ROUTES = [
   // --- درون چاهی
   { pattern: "/downhole/inout/*",      title: "درون چاهی / ورود و خروج" },
-  { pattern: "/downhole/repair/*",     title: "درون چاهی / تعمیرات" },
+  { pattern: "/downhole/groupops/*",     title: "درون چاهی / گروه های عملیاتی" },
 
   // --- گروه‌های عملیاتی (جهانی)
   { pattern: "/ops/groups/*",          title: "گروه‌های عملیاتی" },

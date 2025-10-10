@@ -1,0 +1,81 @@
+/* ===== GroupOps (styles specific to this page) ===== */
+
+/* نوار فیلترها در بالای تب‌ها */
+.grp-filter{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+
+/* فیلدهای الزامی: دور قرمز + زیرنویس */
+.input.req{
+  border-color:#ef4444 !important;
+  box-shadow:0 0 0 2px rgba(239,68,68,.10);
+}
+.req-hint{
+  display:block;
+  margin-top:4px;
+  font-size:12px;
+  color:#ef4444;
+}
+
+/* نشانگر وضعیت تکمیل‌شده کنار هر کار */
+.done-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:26px;
+  padding:0 10px;
+  border-radius:999px;
+  border:1px solid #16a34a;
+  color:#166534;
+  background:#ecfdf5;
+  margin-inline-end:6px;
+  font-size:12px;
+  white-space:nowrap;
+}
+
+/* لیست اعضا در پنل انتخاب: ستونی + دکمه‌ها */
+.member-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  gap:6px;
+  max-height:50vh;
+  overflow:auto;
+}
+.member-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+  border-radius:8px;
+  padding:6px 10px;
+}
+
+/* کارت‌ها (اگر global نداری) */
+.grp-grid{ display:grid; gap:12px; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); }
+.grp-card{ border:1px solid #e5e7eb; border-radius:12px; padding:10px; background:#fff; }
+.grp-hdr{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.grp-title{ font-weight:800; }
+.grp-row{ display:flex; gap:8px; align-items:center; margin:4px 0; }
+.grp-kpi{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+
+/* کمی فضای بیشتر برای ستون عملیات در جدول کارها */
+td.ops{ white-space:nowrap; }
+
+/* اگر خواستی فیلدهای تاریخ در نوار فیلتر کوچک‌تر باشند */
+.grp-filter .rmdp-rtl .rmdp-input{
+  min-width:220px;
+}
+
+/* در حالت خیلی کوچک، فیلترها تمام‌عرض شوند */
+@media (max-width:640px){
+  .grp-filter > * { flex:1 1 100%; }
+  .grp-filter .io-actions { width:100%; display:flex; gap:8px; }
+}
