@@ -35,7 +35,7 @@ export default function Sidebar({ open, onClose }) {
             aria-expanded={expandDownhole}
             aria-controls="downhole-sub"
           >
-درون چاهی            <span className="chev">{expandDownhole ? "▾" : "▸"}</span>
+برون  چاهی            <span className="chev">{expandDownhole ? "▾" : "▸"}</span>
           </button>
 
           {expandDownhole && (
@@ -72,7 +72,7 @@ export default function Sidebar({ open, onClose }) {
             aria-expanded={expandSurface}
             aria-controls="surface-sub"
           >
-برون چاهی            <span className="chev">{expandSurface ? "▾" : "▸"}</span>
+درون چاهی            <span className="chev">{expandSurface ? "▾" : "▸"}</span>
           </button> }
 
          
