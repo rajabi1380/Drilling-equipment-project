@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 
+=======
+// ============================
+// File: src/pages/InOut.jsx
+// ============================
+>>>>>>> fba342a (Debug_Code)
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import "./Inout.css";
 import { loadLS, saveLS } from "../utils/ls";
@@ -81,7 +87,10 @@ const [openWOs, setOpenWOs] = useState(wboot.open || []);
 const [closedWOs] = useState(wboot.closed || []); // setter حذف شد تا warning بره
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> fba342a (Debug_Code)
   /* UI State */
   const [notify, setNotify] = useState(null);
   const [showModal, setShowModal] = useState(null); // "in" | "out"
