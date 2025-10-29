@@ -2,34 +2,55 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 
+const noop = () => {};
+
 export default function ItemPickerModal({
-  open,
-  onClose,
+  open = false,
+  onClose = noop,
   catalog = [],
-  onPick,
+  onPick = noop,
   title = "انتخاب از لیست تجهیزات",
 }) {
   const [q, setQ] = useState("");
 
+  // قفل اسکرول بدنه وقتی مدال باز است (cleanup امن + سازگار با SSR)
   useEffect(() => {
-    if (!open) return;
+    if (!open || typeof document === "undefined") return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      // هنگام پاکسازی، مقدار قبلی را برگردان
+      document.body.style.overflow = prev || "";
+    };
   }, [open]);
 
-  const onKey = useCallback((e) => {
-    if (e.key === "Escape") { e.stopPropagation(); onClose?.(); }
-    else if (e.key === "Enter" && filtered.length) { e.preventDefault(); onPick?.(filtered[0]); }
-  }, [onClose, onPick]); // filtered عمداً وارد نشده که با هر تایپ rebind نشود
+  // هندلر کلیدها (ESC برای بستن، Enter برای انتخاب اولین مورد)
+  // filtered را عمداً در deps نمی‌گذاریم تا با هر تایپ rebind نشود؛
+  // در JS کلوزرها رفرنس را نگه می‌دارند و مقدار جاری را خواهند دید.
+  const onKey = useCallback(
+    (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      } else if (e.key === "Enter" && filtered.length) {
+        e.preventDefault();
+        onPick(filtered[0]);
+      }
+    },
+    [onClose, onPick] // filtered عمداً اضافه نشد
+  );
 
+  // افزودن/حذف لیسنر کی‌داون (از boolean برای capture استفاده می‌کنیم تا remove دقیقاً match شود)
   useEffect(() => {
-    if (!open) return;
-    window.addEventListener("keydown", onKey, { capture: true });
-    return () => window.removeEventListener("keydown", onKey, { capture: true });
+    if (!open || typeof window === "undefined") return;
+    window.addEventListener("keydown", onKey, true); // capture=true
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+    };
   }, [open, onKey]);
 
-  const rows = Array.isArray(catalog) ? catalog : [];
+  const rows = useMemo(() => (Array.isArray(catalog) ? catalog : []), [catalog]);
+
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return rows.slice(0, 300);
@@ -37,7 +58,9 @@ export default function ItemPickerModal({
       .filter((it) => {
         const n = (it?.name || "").toLowerCase();
         const c = (it?.code || "").toLowerCase();
-        const sz = Array.isArray(it?.sizes) ? it.sizes.join(" ").toLowerCase() : (it?.size || "").toLowerCase();
+        const sz = Array.isArray(it?.sizes)
+          ? it.sizes.join(" ").toLowerCase()
+          : (it?.size || "").toLowerCase();
         return n.includes(s) || c.includes(s) || sz.includes(s);
       })
       .slice(0, 300);
@@ -47,10 +70,19 @@ export default function ItemPickerModal({
 
   const body = (
     <div className="ipm-backdrop" onClick={onClose}>
-      <div className="ipm-modal" dir="rtl" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title}>
+      <div
+        className="ipm-modal"
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         <header className="ipm-header">
           <div className="ipm-title">{title}</div>
-          <button className="ipm-close" onClick={onClose} aria-label="بستن">✕</button>
+          <button className="ipm-close" onClick={onClose} aria-label="بستن">
+            ✕
+          </button>
         </header>
 
         <div className="ipm-body">
@@ -69,13 +101,15 @@ export default function ItemPickerModal({
                   <th>نام تجهیز</th>
                   <th>کد</th>
                   <th>سایز</th>
-                  <th style={{ width: 110 }} /> {/* دکمه انتخاب آخرِ ردیف */}
+                  <th style={{ width: 110 }} />
                 </tr>
               </thead>
               <tbody>
                 {filtered.length ? (
                   filtered.map((it, idx) => {
-                    const size0 = Array.isArray(it?.sizes) ? (it.sizes[0] || "") : (it?.size || "");
+                    const size0 = Array.isArray(it?.sizes)
+                      ? it.sizes[0] || ""
+                      : it?.size || "";
                     return (
                       <tr key={`${it.code || it.name || "row"}-${idx}`}>
                         <td>{it?.name || "—"}</td>
@@ -85,7 +119,7 @@ export default function ItemPickerModal({
                           <button
                             type="button"
                             className="ipm-pick"
-                            onClick={() => onPick?.(it)}
+                            onClick={() => onPick(it)}
                           >
                             انتخاب
                           </button>
@@ -95,7 +129,9 @@ export default function ItemPickerModal({
                   })
                 ) : (
                   <tr>
-                    <td colSpan={4} className="empty">موردی یافت نشد.</td>
+                    <td colSpan={4} className="empty">
+                      موردی یافت نشد.
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -104,11 +140,17 @@ export default function ItemPickerModal({
         </div>
 
         <footer className="ipm-footer">
-          <button className="btn" onClick={onClose}>بستن</button>
+          <button className="btn" onClick={onClose}>
+            بستن
+          </button>
         </footer>
       </div>
     </div>
   );
 
+  // SSR-safe: اگر document نبود، برنگرد (در محیط توسعه CRA اوکیه)
+  if (typeof document === "undefined") return null;
+
+  // پورتال به body
   return createPortal(body, document.body);
 }

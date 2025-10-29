@@ -8,6 +8,7 @@ import InOut from "./Components/InOut";
 import Turning from "./Components/Turning";
 import DownholeInOut from "./Components/DownholeInOut";
 import GroupOps from "./Components/GroupOps"; // ← فایل کامپوننت گروه‌های عملیاتی
+import Reports from "./Components/Report";
 
 import "./styles/base.css";
 import Request from "./Components/Request";
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/maintenance/inout" element={<InOut />} />
           <Route path="/maintenance/request" element={<Request />} />
           <Route path="/maintenance/turning" element={<Turning />} />
+           <Route path="/maintenance/reports" element={<Reports />} />
 
           {/* داون‌هول */}
           <Route path="/downhole/inout" element={<DownholeInOut />} />

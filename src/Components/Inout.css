@@ -1,183 +1,80 @@
-/* ===== InOut (ورود/خروج – دکل به دکل – موجودی) ===== */
-
+/* ===== InOut (ورود/خروج + تراشکاری) ===== */
 .io-page { padding: 12px; background: #f6f7fb; }
 .io-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; }
 
-/* ---- Alert / Banner ---- */
-.alert {
-  display:flex; gap:12px; align-items:flex-start;
-  padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb; margin-bottom:10px;
+/* نوتیف مدرن */
+.notify {
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  animation: fadeSlide .4s ease both;
 }
-.alert .alert-title { font-weight:700; }
-.alert .alert-body { display:flex; flex-wrap:wrap; gap:6px; }
-.alert .badge {
-  display:inline-flex; align-items:center; gap:6px;
-  height:26px; padding:0 10px; border-radius:999px; border:1px solid #e5e7eb; background:#fff;
-  font-size:12px;
-}
-.alert.warn { background:#fff7ed; border-color:#fbd6a7; }
-.alert.warn .alert-title { color:#b45309; }
-.alert.error { background:#fef2f2; border-color:#fecaca; }
-.alert.error .alert-title { color:#b91c1c; }
+.notify.success { background:#ecfdf5; color:#065f46; border:1px solid #6ee7b7; }
+.notify.warn    { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
+.notify.info    { background:#eff6ff; color:#1e40af; border:1px solid #93c5fd; }
 
-/* ---- Tabs ---- */
-.tabs{
-  display:flex; align-items:center; gap:8px; margin-bottom:8px;
-  justify-content:center;                 /* وسط‌چین */
-}
-.tab{
-  /* بزرگ‌تر و تیترمانند */
-  height: 40px;                           /* ↑ قبلاً 32px */
-  padding: 0 16px;                        /* ↑ کمی بیشتر */
-  font-size: 18px;                        /* ↑ افزایش اندازه فونت */
-  font-weight: 700;
+.badge{ background:#eef3ff; border:1px solid #c7d2fe; color:#1e3a8a; border-radius:8px; padding:6px 10px; font-size:12px; }
+.mono{ font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
+.low{ color:#b91c1c; font-weight:600; }
 
-  border:1px solid #e5e7eb;
-  background:#f8fafc;
-  border-radius:8px; cursor:pointer;
-
-  /* ترنزیشن نرم‌تر */
-  transition:
-    background-color .28s ease,
-    color .28s ease,
-    border-color .28s ease,
-    box-shadow .28s ease,
-    transform .18s ease;
-}
-.tab:hover{ background:#f1f5f9; }
-.tab:active{ transform: translateY(1px); }
-
-.tab.is-active{
-  background:#1d4ed8; border-color:#1d4ed8;
-  
-}
-.divider { color:#cbd5e1; }
-
-/* ---- Filter bar ---- */
-.io-filter { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
-.io-filter__fields {
-  display:grid; gap:8px;
-  grid-template-columns: repeat(5, 1fr);
-}
-.io-filter__actions { display:flex; gap:8px; align-items:center; }
-.f-item { display:flex; flex-direction:column; gap:4px; }
-.f-item .btnrow { display:flex; gap:8px; }
-.f-apply { align-self:end; }
-
-/* ---- Toolbar above table ---- */
-.table-toolbar { display:flex; gap:8px; align-items:center; margin:8px 0; }
-
-/* ---- Table ---- */
-.table-wrap { overflow:auto; border:1px solid #e5e7eb; border-radius:8px; }
-table { width:100%; border-collapse:collapse; background:#fff; }
+/* جدول‌ها */
+.table-wrap { margin-top:10px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; }
+table { width:100%; border-collapse:collapse; }
 th, td { padding:8px 10px; border-bottom:1px solid #eef2f7; text-align:right; }
 thead th { background:#f8fafc; font-weight:600; }
-tbody tr:hover { background:#f8fafc; }
-td.empty, .empty { text-align:center; color:#64748b; padding:12px; }
+.empty { text-align:center; color:#6b7280; padding:10px; }
 
-/* row accents */
-.row-in   { background: #f0f9ff; }
-.row-out  { background: #fff1f2; }
-.row-rig  { background: #fefce8; }
-.row-low  { background: #fff7ed; }
-.qty-badge {
-  display:inline-flex; align-items:center; justify-content:center;
-  min-width:28px; height:24px; padding:0 8px; border-radius:999px;
-  background:#eef2f7; border:1px solid #e5e7eb; font-weight:600;
+/* تراشکاری / لیست درخواست‌ها */
+.lathe-list {
+  margin-top: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  padding: 10px;
 }
-.qty-badge.is-low { background:#fde68a; border-color:#fbbf24; }
+.lathe-list h4 { margin-bottom: 8px; color:#1e3a8a; }
 
-/* ---- Pagination ---- */
-.pagination { display:flex; align-items:center; gap:8px; padding:8px 0; }
-.pg-btn {
-  height:30px; padding:0 10px; border:1px solid #e5e7eb; background:#f8fafc; border-radius:8px; cursor:pointer;
-  transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
-}
-.pg-btn:hover { background:#eef2f7; }
-
-/* ---- Generic controls (match ModalBase buttons/inputs) ---- */
+/* فرم‌های داخل ModalBase */
+.mb-form { display:flex; flex-direction:column; gap:10px; }
+.mb-form .row { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
+.mb-form .col { display:flex; flex-direction:column; }
 .input {
-  height: 36px; padding: 0 10px; border: 1px solid #e5e7eb; border-radius: 8px; background:#fff;
-  transition: box-shadow .25s ease, border-color .25s ease;
+  height: 36px; padding: 0 10px; border: 1px solid #e5e7eb;
+  border-radius: 8px; background:#fff;
 }
-textarea.input { height: 90px; padding-top: 8px; padding-bottom: 8px; }
-.input.checkbox { display:flex; align-items:center; gap:6px; }
-.muted { color:#64748b; }
+textarea.input { min-height: 96px; padding: 8px; }
+.input.err { border-color:#fca5a5; box-shadow:0 0 0 2px #fee2e2 inset; }
+.err-msg { color:#dc2626; font-size:12px; margin-top:4px; }
 
-.btn {
-  height: 32px; padding:0 10px; border:1px solid #e5e7eb; background:#f8fafc; border-radius:8px; cursor:pointer;
-  transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease, transform .18s ease;
+/* دکمه انتخاب از کاتالوگ */
+.pick-btn {
+  height: 36px; padding: 0 12px; border: 1px dashed #94a3b8; color:#1e293b;
+  border-radius: 8px; background:#f8fafc; cursor:pointer;
 }
-.btn:hover { background:#eef2f7; }
-.btn:active{ transform: translateY(1px); }
-.btn.small { height: 28px; font-size:12px; padding:0 8px; }
-.btn.primary { background:#2563eb; color:#fff; border-color:#2563eb; }
-.btn.primary:hover { background:#1d4ed8; }
+
+/* سگمنت (PM/EM/WO/ED) */
+.seg { display:flex; gap:8px; align-items:center; }
+.seg-btn {
+  height:32px; min-width:48px; padding:0 10px; border:1px solid #e5e7eb;
+  background:#f8fafc; border-radius:20px; cursor:pointer;
+}
+.seg-btn.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+
+/* دکمه‌ها */
+.btn { height:32px; padding:0 10px; border:1px solid #e5e7eb; border-radius:8px; cursor:pointer; transition:.25s; }
 .btn.success { background:#059669; color:#fff; border-color:#059669; }
 .btn.success:hover { background:#047857; }
-.btn.warn { background:#f59e0b; color:#111827; border-color:#f59e0b; }
-.btn.warn:hover { filter: brightness(0.98); }
-.btn.danger { background:#ef4444; color:#fff; border-color:#ef4444; }
-.btn.danger:hover { background:#dc2626; }
-.btn.solid { background:#1f2937; color:#fff; border-color:#1f2937; }
+.btn.danger  { background:#ef4444; color:#fff; border-color:#ef4444; }
+.btn.warn    { background:#f59e0b; color:#111827; border-color:#f59e0b; }
+.btn.primary { background:#2563eb; color:#fff; border-color:#2563eb; }
+.btn:hover { filter:brightness(.97); }
 
-/* ---- Small helpers ---- */
-.total-stock {
-  margin-top:8px; padding:8px 10px; border:1px dashed #cbd5e1; border-radius:8px; background:#fafafa; font-weight:600;
-}
+/* بزرگ‌کردن پهنای مدال (اگر ModalBase کلاس یا style خاصی نده) */
+.modal-base-xl, .r-modal-xl { max-width: 1180px !important; }
 
-/* ===== Strong Black Focus (final) ===== */
-:where(.tab, .btn, .pg-btn, .input, textarea.input, select.input){
-  outline: none;
-  transition: box-shadow .28s ease, border-color .28s ease, color .28s ease, background-color .28s ease;
-}
-
-/* Buttons & Tabs */
-.tab:focus,
-.tab:focus-visible,
-.btn:focus,
-.btn:focus-visible,
-.pg-btn:focus,
-.pg-btn:focus-visible{
-  color:#000 !important;
-  border-color:#000 !important;
-  box-shadow:0 0 0 2px rgba(0,0,0,.12) !important;
-}
-
-/* Inputs */
-.input:focus,
-.input:focus-visible,
-textarea.input:focus,
-textarea.input:focus-visible,
-select.input:focus,
-select.input:focus-visible{
-  color:#000 !important;
-  caret-color:#000 !important;
-  border-color:#000 !important;
-  box-shadow:0 0 0 2px rgba(0,0,0,.12) !important;
-}
-
-/* High-contrast users */
-@media (prefers-contrast: more){
-  .tab:focus-visible,
-  .btn:focus-visible,
-  .pg-btn:focus-visible,
-  .input:focus-visible,
-  textarea.input:focus-visible,
-  select.input:focus-visible{
-    box-shadow:0 0 0 3px rgba(0,0,0,.18) !important;
-  }
-}
-
-/* ---- محتوای هر تب: ورود نرم هنگام سوییچ ---- */
-/* هر بخشی که بعد از تعویض تب mount می‌شود، با این انیمیشن وارد می‌شود */
-.io-card .table-wrap,
-.io-card .io-filter,
-.io-card .pagination,
-.io-card .total-stock {
-  animation: fadeSlide .28s ease both;
-}
+/* انیمیشن نوتیف */
 @keyframes fadeSlide{
-  from { opacity:0; transform: translateY(6px); }
-  to   { opacity:1; transform: translateY(0); }
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
 }

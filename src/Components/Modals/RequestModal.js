@@ -2,13 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ModalBase from "../common/ModalBase";
 import ItemPickerModal from "../common/ItemPickerModal";
-import {
-  DatePicker,
-  TimePicker,
-  persian,
-  persian_fa,
-  faFmt,
-} from "../../utils/date";
+import { DatePicker, TimePicker, persian, persian_fa, faFmt } from "../../utils/date";
 
 export default function RequestModal({
   open = false,
@@ -16,16 +10,15 @@ export default function RequestModal({
   onSubmit,
   catalog = [],
 }) {
-  const [tab, setTab] = useState("turning"); // turning | inspection
-  const [reqType, setReqType] = useState("wo"); // wo | pm | ed
+  const [tab, setTab] = useState("turning");      // turning | inspection
+  const [reqType, setReqType] = useState("wo");   // wo | pm | ed
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [size, setSize] = useState("");
   const [unit, setUnit] = useState("تراشکاری");
 
-  const status =
-    tab === "inspection" ? "در انتظار بازرسی" : "در انتظار تعمیر";
+  const status = tab === "inspection" ? "در انتظار بازرسی" : "در انتظار تعمیر";
 
   useEffect(() => {
     setUnit(tab === "inspection" ? "بازرسی" : "تراشکاری");
@@ -39,8 +32,11 @@ export default function RequestModal({
   const [failureName, setFailureName] = useState("");
   const [failureCode, setFailureCode] = useState("");
 
-  // باز/بسته بودن پیکر انتخاب
+  // پیکر انتخاب
   const [pickOpen, setPickOpen] = useState(false);
+
+  // پلاگین تایم‌پیکر را فقط یک‌بار بساز (ایمن برای آن‌مانت/ریمونت)
+  const timePlugin = useMemo(() => <TimePicker position="bottom" />, []);
 
   // اعتبارسنجی ساده
   const touched = useMemo(
@@ -97,14 +93,7 @@ export default function RequestModal({
       >
         <div className="mb-form">
           {/* نوع درخواست و تب‌ها */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginBottom: 10,
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
             <span>نوع درخواست:</span>
             {["wo", "pm", "ed"].map((t) => (
               <button
@@ -137,10 +126,7 @@ export default function RequestModal({
           </div>
 
           {/* نام/کد/سایز + دکمه انتخاب */}
-          <div
-            className="row"
-            style={{ gridTemplateColumns: "1fr 1fr 1fr auto" }}
-          >
+          <div className="row" style={{ gridTemplateColumns: "1fr 1fr 1fr auto" }}>
             <div className="col">
               <input
                 className={`input ${touched.name ? "err" : ""}`}
@@ -172,11 +158,7 @@ export default function RequestModal({
             </div>
 
             <div className="col" style={{ alignItems: "flex-end" }}>
-              <button
-                type="button"
-                className="pick-btn"
-                onClick={() => setPickOpen(true)}
-              >
+              <button type="button" className="pick-btn" onClick={() => setPickOpen(true)}>
                 انتخاب
               </button>
             </div>
@@ -192,7 +174,7 @@ export default function RequestModal({
               calendar={persian}
               locale={persian_fa}
               format={faFmt}
-              plugins={[<TimePicker position="bottom" />]}
+              plugins={[timePlugin]}
               inputClass="input"
               containerClassName="rmdp-rtl"
               placeholder="تاریخ درخواست/شروع"
@@ -207,7 +189,7 @@ export default function RequestModal({
               calendar={persian}
               locale={persian_fa}
               format={faFmt}
-              plugins={[<TimePicker position="bottom" />]}
+              plugins={[timePlugin]}
               inputClass="input"
               containerClassName="rmdp-rtl"
               placeholder="تاریخ پایان عملیات"
@@ -244,15 +226,13 @@ export default function RequestModal({
         </div>
       </ModalBase>
 
-      {/* پیکر انتخاب مشترک (روی کل صفحه رندر می‌شود) */}
+      {/* پیکر انتخاب مشترک */}
       <ItemPickerModal
         open={pickOpen}
         onClose={() => setPickOpen(false)}
         catalog={catalog}
         onPick={(it) => {
-          const s0 = Array.isArray(it?.sizes)
-            ? it.sizes[0] || ""
-            : it?.size || "";
+          const s0 = Array.isArray(it?.sizes) ? it.sizes[0] || "" : it?.size || "";
           if (it?.name) setName(it.name);
           if (it?.code) setCode(it.code);
           if (s0) setSize(s0);

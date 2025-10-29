@@ -1,30 +1,34 @@
+// src/Components/common/ExportButtons.js
 import React from "react";
 import { exportCSV, exportDOC } from "../../utils/export";
 
 /**
- * props:
- *  - getExport(): { filename, title, headers, rows }  // headers: string[]
- *  - variant?: "compact" | "normal"
+ * حالت A: getExport(): { filename, title, headers, rows }
+ * حالت B: onExcel(), onWord()
+ * variant: "compact" | "normal"
  */
-export default function ExportButtons({ getExport, variant = "normal" }) {
-  const onExcel = () => {
-    const { filename, headers, rows } = getExport();
-    if (!headers?.length) return;
-    const finalName = filename.endsWith(".csv") ? filename : `${filename}.csv`;
-    exportCSV(finalName, headers, rows);
+export default function ExportButtons({ getExport, onExcel, onWord, variant = "normal", label }) {
+  const _excel = () => {
+    if (typeof onExcel === "function") return onExcel();
+    const pack = getExport?.();
+    if (!pack || !pack.headers?.length) return;
+    const name = pack.filename.endsWith(".csv") ? pack.filename : `${pack.filename}.csv`;
+    exportCSV(name, pack.headers, pack.rows || []);
   };
 
-  const onWord = () => {
-    const { filename, title, headers, rows } = getExport();
-    if (!headers?.length) return;
-    const finalName = filename.endsWith(".doc") ? filename : `${filename}.doc`;
-    exportDOC(finalName, title || "گزارش", headers, rows);
+  const _word = () => {
+    if (typeof onWord === "function") return onWord();
+    const pack = getExport?.();
+    if (!pack || !pack.headers?.length) return;
+    const name = pack.filename.endsWith(".doc") ? pack.filename : `${pack.filename}.doc`;
+    exportDOC(name, pack.title || "گزارش", pack.headers, pack.rows || []);
   };
 
   return (
     <div className={`export-group ${variant === "compact" ? "export-group--compact" : ""}`}>
-      <button className="btn" onClick={onExcel}>خروجی Excel</button>
-      <button className="btn" onClick={onWord}>خروجی Word</button>
+      {label && <span style={{ marginInlineEnd: 8 }}>{label}</span>}
+      <button className="btn" onClick={_excel}>خروجی Excel</button>
+      <button className="btn" onClick={_word}>خروجی Word</button>
     </div>
   );
 }

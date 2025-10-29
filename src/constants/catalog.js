@@ -10,7 +10,20 @@ export const TEAM_MEMBERS = [
   "همیار پلیس",
   "سینا نوذری",
   "شایان مرادی",
-  "میثم عزیزی"
+  "میثم عزیزی",
+];
+
+// ——— کاتالوگ خرابی‌ها (برای انتخاب در مدال خروج → تراشکاری) ———
+// هر آیتم: { id, code, name }
+export const FAILURE_ITEMS = [
+  { id: "F001", code: "BRG-01", name: "خرابی یاتاقان / بلبرینگ" },
+  { id: "F002", code: "SEAL-02", name: "نشتی پکینگ/سیل" },
+  { id: "F003", code: "THRD-03", name: "آسیب رزوه" },
+  { id: "F004", code: "BEND-04", name: "خمش / تاب برداشتن" },
+  { id: "F005", code: "CRK-05", name: "ترک سطحی" },
+  { id: "F006", code: "COR-06", name: "خوردگی" },
+  { id: "F007", code: "LEAK-07", name: "نشتی سیال" },
+  { id: "F008", code: "WORN-08", name: "سایش بیش از حد" },
 ];
 
 // ——— کاتالوگ تجهیزات هر واحد ———
@@ -84,3 +97,6 @@ export const CATALOG = {
   choke: CHOKE_MANIFOLD,
   pipe: PIPE_ITEMS,
 };
+
+// اکسپورت‌های کمکی
+export const FAILURE_CATALOG = FAILURE_ITEMS;

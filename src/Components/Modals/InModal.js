@@ -1,3 +1,4 @@
+// src/Components/Modals/InModal.js
 import React, { useMemo, useState } from "react";
 import ModalBase from "../common/ModalBase";
 import ItemPickerModal from "../common/ItemPickerModal";
@@ -29,6 +30,9 @@ export default function InModal({ open = true, onClose, onSubmit, catalogProvide
 
   const [pickOpen, setPickOpen] = useState(false);
   const catalog = useMemo(() => normalizeCatalog(catalogProvider), [catalogProvider]);
+
+  // پلاگین تایم‌پیکر را فقط یکبار بساز (ایمن برای آن‌مونت/ری‌ماینت)
+  const timePlugin = useMemo(() => <TimePicker position="bottom" />, []);
 
   const missing = { name: !name.trim(), code: !code.trim(), size: !size.trim() };
   const hasError = missing.name || missing.code || missing.size;
@@ -80,17 +84,17 @@ export default function InModal({ open = true, onClose, onSubmit, catalogProvide
               calendar={persian}
               locale={persian_fa}
               format={faFmt}
-              plugins={[<TimePicker position="bottom" />]}
+              plugins={[timePlugin]}
               inputClass="input"
               containerClassName="rmdp-rtl"
               placeholder="تاریخ و ساعت ورود"
             />
-            <select className="input"  value={status} onChange={(e)=>setStatus(e.target.value)}>
+            <select className="input" value={status} onChange={(e)=>setStatus(e.target.value)}>
               <option>تعمیر شده</option>
               <option>بازرسی شده</option>
               <option>—</option>
             </select>
-            <input className="input" placeholder="واحد ارسالی  " value={fromWhere} onChange={(e)=>setFromWhere(e.target.value)} />
+            <input className="input" placeholder="واحد ارسالی" value={fromWhere} onChange={(e)=>setFromWhere(e.target.value)} />
           </div>
 
           <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e)=>setNote(e.target.value)} />
