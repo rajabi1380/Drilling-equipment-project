@@ -7,7 +7,7 @@ import Sidebar from "./Components/Sidebar";
 import InOut from "./Components/InOut";
 import Turning from "./Components/Turning";
 import DownholeInOut from "./Components/DownholeInOut";
-import GroupOps from "./Components/GroupOps"; // ← فایل کامپوننت گروه‌های عملیاتی
+import GroupOpsPage from "./Components/GroupOpsPage"; // ← فایل کامپوننت گروه‌های عملیاتی
 import Reports from "./Components/Report";
 
 import "./styles/base.css";
@@ -43,7 +43,7 @@ export default function App() {
 
           {/* داون‌هول */}
           <Route path="/downhole/inout" element={<DownholeInOut />} />
-          <Route path="/downhole/groupops" element={<GroupOps />} /> {/* ← مسیر جدید */}
+<Route path="/groupops" element={<GroupOpsPage />} />
 
           {/* 404 */}
           <Route path="*" element={<h1>صفحهٔ موردنظر یافت نشد!</h1>} />

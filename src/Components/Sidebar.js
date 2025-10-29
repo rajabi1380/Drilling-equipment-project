@@ -26,7 +26,6 @@ export default function Sidebar({ open, onClose }) {
         </header>
 
         <nav className="sb-menu">
-
           {/* === درون‌چاهی === */}
           <button
             className="sb-item"
@@ -35,7 +34,8 @@ export default function Sidebar({ open, onClose }) {
             aria-expanded={expandDownhole}
             aria-controls="downhole-sub"
           >
-برون  چاهی            <span className="chev">{expandDownhole ? "▾" : "▸"}</span>
+            برون‌چاهی
+            <span className="chev">{expandDownhole ? "▾" : "▸"}</span>
           </button>
 
           {expandDownhole && (
@@ -48,35 +48,23 @@ export default function Sidebar({ open, onClose }) {
                 onClick={onClose}
                 end
               >
-رسید و ارسال              </NavLink>
-
-             
-                 <NavLink
-                to="/downhole/groupops"
-                className={({ isActive }) =>
-                  "sb-subitem" + (isActive ? " is-active" : "")
-                }
-                onClick={onClose}
-                end
-              >
-                گروه های عملیاتی
+                رسید و ارسال
               </NavLink>
+              {/* لینک گروه‌های عملیاتی از این بخش حذف شد */}
             </div>
           )}
 
-          {/* === برون‌چاهی (Surface) — برگردونده شد === */}
-           { <button
+          {/* === برون‌چاهی (Surface) — در صورت نیاز توسعه دهید === */}
+          <button
             className="sb-item"
             type="button"
             onClick={() => setExpandSurface(v => !v)}
             aria-expanded={expandSurface}
             aria-controls="surface-sub"
           >
-درون چاهی            <span className="chev">{expandSurface ? "▾" : "▸"}</span>
-          </button> }
-
-         
-        
+            درون‌چاهی
+            <span className="chev">{expandSurface ? "▾" : "▸"}</span>
+          </button>
 
           {/* === تعمیرات و نگهداری لوله === */}
           <button
@@ -100,7 +88,8 @@ export default function Sidebar({ open, onClose }) {
                 onClick={onClose}
                 end
               >
-رسید و ارسال              </NavLink>
+                رسید و ارسال
+              </NavLink>
 
               <NavLink
                 to="/maintenance/request"
@@ -112,31 +101,43 @@ export default function Sidebar({ open, onClose }) {
               >
                 ثبت درخواست
               </NavLink>
-
-           
             </div>
           )}
-             <NavLink
-                to="/maintenance/reports"
-                className={({ isActive }) =>
-                  "sb-subitem" + (isActive ? " is-active" : "")
-                }
-                onClick={onClose}
-                end
-              >
-                گزارشات
-              </NavLink>
 
-              <NavLink
-                to="/maintenance/turning"
-                className={({ isActive }) =>
-                  "sb-subitem" + (isActive ? " is-active" : "")
-                }
-                onClick={onClose}
-                end
-              >
-                تراشکاری
-              </NavLink>
+    
+
+          <NavLink
+            to="/maintenance/turning"
+            className={({ isActive }) =>
+              "sb-subitem" + (isActive ? " is-active" : "")
+            }
+            onClick={onClose}
+            end
+          >
+            تراشکاری
+          </NavLink>
+
+          {/* === آیتم مستقل: گروه‌های عملیاتی === */}
+          <NavLink
+            to="/groupops"
+            className={({ isActive }) =>
+              "sb-subitem" + (isActive ? " is-active" : "")
+            }
+            onClick={onClose}
+            end
+            aria-label="گروه‌های عملیاتی"
+          >
+            گروه‌های عملیاتی
+          </NavLink>      <NavLink
+            to="/maintenance/reports"
+            className={({ isActive }) =>
+              "sb-subitem" + (isActive ? " is-active" : "")
+            }
+            onClick={onClose}
+            end
+          >
+            گزارشات
+          </NavLink>
         </nav>
 
         <footer className="sb-footer">

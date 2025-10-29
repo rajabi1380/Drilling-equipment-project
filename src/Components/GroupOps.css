@@ -1,200 +1,230 @@
-/* ===== GroupOps (styles specific to this page) ===== */
+/* =========================================
+   GroupOps – Minimal UI/UX Styles (RTL)
+   Scope: only this page (ui-*)
+   ========================================= */
 
-/* --- نوار فیلترها بالای تب‌ها --- */
-.grp-filter{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap;
-  margin-bottom:10px;
-}
-.io-actions { display:flex; gap:6px; }
+/* ---------- Tokens ---------- */
+:root {
+  --ui-bg: #ffffff;
+  --ui-muted: #6b7280;
+  --ui-soft: #f1f5f9;
+  --ui-line: #e5e7eb;
+  --ui-card: #ffffff;
+  --ui-text: #0f172a;
 
-/* فیلدهای تاریخ در فیلتر کوچک‌تر */
-.grp-filter .rmdp-rtl .rmdp-input{ min-width:220px; }
+  --ui-primary: #2563eb;
+  --ui-primary-600: #1d4ed8;
 
-/* ریسپانسیو فیلترها */
-@media (max-width:640px){
-  .grp-filter > * { flex:1 1 100%; }
-  .grp-filter .io-actions { width:100%; display:flex; gap:8px; }
-}
+  --ui-danger: #dc2626;
+  --ui-danger-100: #fee2e2;
+  --ui-danger-200: #fecaca;
 
-/* --- فیلدهای الزامی --- */
-.input.req{
-  border-color:#ef4444 !important;
-  box-shadow:0 0 0 2px rgba(239,68,68,.10);
-}
-.req-hint{
-  display:block;
-  margin-top:4px;
-  font-size:12px;
-  color:#ef4444;
+  --ui-radius: 12px;
+  --ui-radius-lg: 14px;
+  --ui-shadow-sm: 0 6px 18px rgba(0,0,0,.06);
+  --ui-shadow-md: 0 16px 42px rgba(0,0,0,.14);
+
+  --ui-gap: 10px;
+  --ui-pad: 12px;
+  --ui-font: system-ui, -apple-system, Segoe UI, Roboto, "IRANSans", "Vazirmatn", Tahoma, Arial, sans-serif;
 }
 
-/* --- دکمه‌ها (پایه + حالت‌ها) --- */
-.btn{ cursor:pointer; transition:background-color .15s ease, border-color .15s ease, opacity .15s ease; }
-.btn:disabled{ opacity:.55; cursor:not-allowed; }
+/* ---------- Page shell ---------- */
+.ui-page {
+  direction: rtl;
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+.ui-page * { box-sizing: border-box; }
+
+/* ---------- Topbar: Tabs + Unit chips ---------- */
+.ui-topbar {
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: wrap; margin-bottom: 12px;
+}
+
+.tabs {
+  display: inline-flex; gap: 4px; background: var(--ui-soft);
+  border: 1px solid var(--ui-line); border-radius: 999px; padding: 4px;
+}
+.tab {
+  appearance: none; background: transparent; border: 0; cursor: pointer;
+  border-radius: 999px; padding: 6px 12px; font-weight: 600; color: var(--ui-muted);
+}
+.tab.on { background: var(--ui-bg); color: var(--ui-text); box-shadow: var(--ui-shadow-sm); }
+
+.seg { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.seg.small { gap: 4px; }
+
+.chip {
+  appearance: none; border: 1px solid var(--ui-line); background: var(--ui-bg);
+  color: var(--ui-text); padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .05s ease;
+}
+.chip:hover { background: #f8fafc; }
+.chip.on { border-color: var(--ui-primary); color: var(--ui-primary); background: #eff6ff; }
+
+/* ---------- Filter bar (shared in tabs) ---------- */
+.ui-filterbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.spacer { margin-inline-start: auto; }
+
+/* DatePicker (react-multi-date-picker) width control */
+.ui-filterbar .rmdp-rtl .rmdp-input { min-width: 220px; }
+
+/* ---------- Inputs & Buttons ---------- */
+.input {
+  height: 36px; padding: 6px 10px; border-radius: 10px;
+  border: 1px solid var(--ui-line); background: var(--ui-bg); color: var(--ui-text);
+  min-width: 180px;
+}
+.input:focus {
+  outline: none; border-color: var(--ui-primary);
+  box-shadow: 0 0 0 2px rgba(37,99,235,.15);
+}
+
+/* Required fields (visual hint) */
+.input.req {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239,68,68,.12);
+}
+
+/* Multiline inputs reuse .input styles */
+textarea.input { height: 90px; resize: vertical; }
+
+/* Buttons */
+.btn {
+  appearance: none; border: 1px solid var(--ui-line); background: #f8fafc;
+  padding: 8px 12px; border-radius: 10px; cursor: pointer; color: var(--ui-text);
+  transition: background-color .15s ease, border-color .15s ease, opacity .15s ease;
+}
+.btn:hover { background: #eef2f7; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
 .btn.small { padding: 4px 10px; font-size: 12px; }
-
-.btn.primary{
-  background:#2563eb !important;
-  border-color:#2563eb !important;
-  color:#fff !important;
+.btn.ghost { background: transparent; }
+.btn.primary {
+  background: var(--ui-primary); border-color: var(--ui-primary); color: #fff;
 }
-.btn.primary:hover{ background:#1d4ed8 !important; border-color:#1d4ed8 !important; }
+.btn.primary:hover { background: var(--ui-primary-600); border-color: var(--ui-primary-600); }
+.btn.danger {
+  background: var(--ui-danger-100); border-color: var(--ui-danger-200); color: #991b1b;
+}
+.btn.danger:hover { background: var(--ui-danger-200); }
 
-.btn-edit { background:#f3f4f6; border-color:#e5e7eb; }
-.btn-edit:hover { background:#e5e7eb; }
-.btn-archive { background:#eef2ff; border-color:#c7d2fe; color:#3730a3; }
-.btn-archive:hover { background:#e0e7ff; }
-.btn-delete, .btn.danger { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
-.btn-delete:hover, .btn.danger:hover { background:#fecaca; }
+/* Icon buttons (row actions) */
+.icon {
+  appearance: none; background: transparent; border: 1px solid var(--ui-line);
+  border-radius: 10px; width: 34px; height: 34px; display: grid; place-items: center;
+  cursor: pointer; transition: background-color .15s ease, transform .05s ease;
+}
+.icon:hover { background: #f8fafc; }
+.icon.danger { border-color: var(--ui-danger-200); color: #991b1b; }
+.icon.danger:hover { background: var(--ui-danger-100); }
 
-/* --- شبکه کارت‌ها (لیست گزارش عملیات) --- */
-.grp-grid{ display:grid; gap:12px; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); }
-.grp-card{ border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff; }
-.grp-hdr{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-.grp-title{ font-weight:800; }
-.grp-row{ display:flex; gap:8px; align-items:center; margin:4px 0; }
-.muted{ color:#6b7280; }
-.grp-kpi{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
-.kpi-badge{ border:1px solid #e5e7eb; border-radius:999px; padding:4px 10px; background:#fff; font-size:12px; }
-.kpi-badge.solid{ background:#eef2ff; border-color:#c7d2fe; }
-.grp-actions { display:flex; gap:6px; margin-top:8px; }
+/* ---------- Active list (rows) ---------- */
+.list { display: flex; flex-direction: column; gap: 8px; }
+.row {
+  display: flex; gap: 10px; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius);
+  background: var(--ui-card);
+}
+.row-main { min-width: 0; }
+.title { font-weight: 800; margin-bottom: 2px; }
+.meta, .sub { color: var(--ui-muted); display: flex; gap: 8px; flex-wrap: wrap; }
+.row-actions { display: inline-flex; gap: 6px; }
 
-/* --- نشانگر وضعیت تکمیل هر کار --- */
-.done-pill{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  height:26px;
-  padding:0 10px;
-  border-radius:999px;
-  border:1px solid #a7f3d0;
-  color:#065f46;
-  background:#ecfdf5;
-  margin-inline-end:6px;
-  font-size:12px;
-  white-space:nowrap;
+/* ---------- Members (grouped blocks) ---------- */
+.block { margin: 14px 0; }
+.block-title { font-weight: 800; margin: 6px 0 8px; }
+.badge {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px;
+  border-radius: 999px; border: 1px solid var(--ui-line); background: #fff; color: var(--ui-muted);
 }
 
-/* --- جدول‌ها (گزارش‌ها/تجمیعی) --- */
-.table-wrap table { width:100%; border-collapse: collapse; }
-.table-wrap th, .table-wrap td { border:1px solid #e5e7eb; padding:8px 10px; text-align:right; }
-.table-wrap thead th { background:#f9fafb; position:sticky; top:0; z-index:1; }
-.table-wrap tbody tr:nth-child(even){ background:#fcfcfd; } /* زبرا ملایم */
-td.ops{ white-space:nowrap; }
-.empty{ color:#6b7280; text-align:center; }
-.empty.small{ font-size:13px; }
+/* ---------- Tables (reports & parts/tasks) ---------- */
+.table-wrap { border: 1px solid var(--ui-line); border-radius: var(--ui-radius); overflow: hidden; background:#fff; }
+.table-wrap.slim { border-radius: 10px; }
+.table-wrap table { width: 100%; border-collapse: collapse; }
+.table-wrap th, .table-wrap td { border-bottom: 1px solid var(--ui-line); padding: 8px 10px; text-align: right; }
+.table-wrap thead th { background: #f9fafb; position: sticky; top: 0; z-index: 1; }
+.table-wrap tbody tr:nth-child(even) { background: #fcfcfd; }
+td.ops { white-space: nowrap; }
+.empty { color: var(--ui-muted); text-align: center; padding: 10px; }
 
-/* ===== مودال‌ها ===== */
-/* بک‌دراپ کلی (اطمینان از قرار گرفتن رو همهٔ لایه‌ها) */
-.dh-backdrop{ z-index: 9990; }
+/* ---------- Chips list (select members) ---------- */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips .chip { padding: 4px 10px; }
 
-/* ===== مودال «انتخاب اعضا» و «نام عضو» – سفید و کاستوم ===== */
-.member-modal{ 
-  background: rgba(0,0,0,.35) !important; 
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  z-index: 9999 !important; /* از بک‌دراپ بالاتر */
+/* ---------- Modal (editor & prompts) ---------- */
+.ui-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  display: grid; place-items: center; z-index: 9999;
+}
+.ui-modal {
+  width: min(920px, calc(100vw - 24px)); max-height: calc(100vh - 24px);
+  background: var(--ui-bg); border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-md);
+  display: flex; flex-direction: column;
+}
+.ui-modal.small {
+  width: min(420px, calc(100vw - 24px));
 }
 
-/* جعبهٔ مودال سفید */
-.member-modal .dh-modal.member-card{
-  background:#ffffff !important;
-  color:#0f172a;
-  border-radius:16px !important;
-  border:1px solid #e5e7eb !important;
-  box-shadow:0 16px 42px rgba(0,0,0,.18) !important;
-  width:560px !important;
-  max-width:calc(100vw - 24px) !important;
+.ui-modal__hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 1px solid var(--ui-line);
+}
+.ui-modal__ftr {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding: 10px 14px; border-top: 1px solid var(--ui-line);
+}
+.ui-form {
+  padding: 12px 14px; overflow: auto;
 }
 
-/* سرعنوان مودال */
-.member-modal .dh-modal__hdr{
-  background:#ffffff !important;
-  border-bottom:1px solid #e5e7eb !important;
-  padding:12px 16px !important;
-  border-top-left-radius:16px;
-  border-top-right-radius:16px;
-}
-.member-modal .dh-modal__hdr b{ font-size:14.5px; }
+/* Sections */
+.section { margin-bottom: 12px; }
+.section-title { font-weight: 800; margin-bottom: 8px; }
 
-/* دکمه بستن */
-.member-modal .dh-close{
-  background:transparent !important;
-  border:none !important;
-  color:#334155 !important;
-  font-size:16px !important;
+/* Responsive grid inside modal */
+.grid {
+  display: grid; gap: 8px;
+  grid-template-columns: repeat(4, 1fr);
 }
-.member-modal .dh-close:hover{ color:#111827 !important; }
-
-/* بدنهٔ مودال */
-.member-modal .form{
-  background:#ffffff !important;
-  padding:12px 14px !important;
+@media (max-width: 980px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 720px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .grid { grid-template-columns: 1fr; }
 }
 
-/* فوکوس ورودی‌ها داخل مودال (حلقه آبی) */
-.member-modal .input:focus{
-  outline:none;
-  border-color:#2563eb !important;
-  box-shadow:0 0 0 2px rgba(37,99,235,.15) !important;
+/* ---------- Utilities ---------- */
+.muted { color: var(--ui-muted); }
+.hide-sm { display: none; }
+@media (min-width: 640px) { .hide-sm { display: initial; } }
+
+/* ---------- Responsive polish ---------- */
+@media (max-width: 640px) {
+  .ui-filterbar > * { flex: 1 1 100%; min-width: 0; }
+  .ui-filterbar .spacer { display: none; }
+  .tab { padding: 6px 10px; }
+  .chip { padding: 6px 10px; }
+  .row { padding: 10px 10px; }
+  .ui-modal { width: calc(100vw - 16px); border-radius: 12px; }
 }
 
-/* لیست اعضا به شکل کارت */
-.member-modal .member-list{
-  list-style:none; margin:0; padding:0;
-  display:grid; gap:10px; max-height:55vh; overflow:auto;
+/* ---------- DatePicker focus harmonization ---------- */
+.rmdp-rtl .rmdp-input {
+  height: 36px; border-radius: 10px; border: 1px solid var(--ui-line);
+  padding: 6px 10px; background: var(--ui-bg); color: var(--ui-text);
 }
-.member-modal .member-item{
-  display:flex; align-items:center; justify-content:space-between;
-  border:1px solid #e5e7eb; border-radius:12px;
-  padding:10px 12px; background:#fff;
-  transition: box-shadow .15s ease, transform .05s ease;
-}
-.member-modal .member-item:hover{
-  box-shadow:0 6px 18px rgba(0,0,0,.06);
-  transform:translateY(-1px);
-}
-.member-modal .member-name{ font-weight:600; }
-
-/* دکمه‌های مودال اعضا */
-.member-modal .btn.primary,
-.member-modal .dh-modal__ftr .btn.primary{
-  background:#2563eb !important; 
-  border-color:#2563eb !important; 
-  color:#fff !important;
-  box-shadow:0 1px 0 rgba(0,0,0,.06);
-}
-.member-modal .btn.primary:hover{ background:#1d4ed8 !important; border-color:#1d4ed8 !important; }
-
-.member-modal .btn.danger{
-  background:#fee2e2 !important; 
-  border-color:#fecaca !important; 
-  color:#991b1b !important;
-}
-.member-modal .btn.danger:hover{ background:#fecaca !important; }
-
-.member-modal .member-choose{ min-width:120px; }
-
-/* فوتر مودال */
-.member-modal .dh-modal__ftr{
-  border-top:1px solid #e5e7eb !important;
-  background:#ffffff !important;
-  padding:10px 14px !important;
-  border-bottom-left-radius:16px;
-  border-bottom-right-radius:16px;
-}
-
-/* سایز مودال کوچک */
-.member-modal .dh-modal--small{ width:auto !important; }
-
-/* ریسپانسیو مودال */
-@media (max-width:520px){
-  .grp-grid{ grid-template-columns:1fr; }
-  .member-modal .dh-modal.member-card{
-    width:calc(100vw - 20px) !important;
-    border-radius:14px !important;
-  }
+.rmdp-rtl .rmdp-input:focus {
+  outline: none; border-color: var(--ui-primary);
+  box-shadow: 0 0 0 2px rgba(37,99,235,.15);
 }
