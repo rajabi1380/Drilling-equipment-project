@@ -1,12 +1,71 @@
 // src/Components/Sidebar.js
-import React, { useState } from "react";
+import React from "react";
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
+import { useAuth } from "./Context/AuthContext"; // مسیر درست ✅
 
 export default function Sidebar({ open, onClose }) {
-  const [expandDownhole, setExpandDownhole] = useState(true);   // درون‌چاهی
-  const [expandSurface, setExpandSurface]   = useState(false);  // برون‌چاهی
-  const [expandMaint, setExpandMaint]       = useState(true);   // تعمیرات لوله
+  const { user, isAdmin, isSuper, hasUnit } = useAuth();
+
+  // ادمین یا مدیر: دسترسی کامل
+  const isFullAccess = isSuper;
+
+  // ────────────────────────────────
+  // رسید و ارسال:
+  // همه به جز بازرسی و تراشکاری
+  const canInOut =
+    isFullAccess ||
+    hasUnit("DOWNHOLE") ||
+    hasUnit("UPHOLE") ||
+    hasUnit("MANDEYABI") ||
+    hasUnit("PIPE");
+
+  // موجودی دکل‌ها:
+  // درون‌چاهی، برون‌چاهی، مانده‌یابی، تعمیرات، مدیرها و ادمین‌ها
+  const canRigs =
+    isFullAccess ||
+    hasUnit("DOWNHOLE") ||
+    hasUnit("UPHOLE") ||
+    hasUnit("MANDEYABI") ||
+    hasUnit("PIPE");
+
+  // گزارشات:
+  // همه واحدهای میدانی (درون‌چاهی، برون‌چاهی، مانده‌یابی، تعمیرات) + مدیرها
+  const canReports =
+    isFullAccess ||
+    hasUnit("DOWNHOLE") ||
+    hasUnit("UPHOLE") ||
+    hasUnit("MANDEYABI") ||
+    hasUnit("PIPE");
+
+  // گروه‌های عملیاتی:
+  // مثل گزارشات
+  const canGroupOps =
+    isFullAccess ||
+    hasUnit("DOWNHOLE") ||
+    hasUnit("UPHOLE") ||
+    hasUnit("MANDEYABI") ||
+    hasUnit("PIPE");
+
+  // دستورکارها:
+  // فقط بازرسی و تراشکاری و مدیرها
+  const canTurning =
+    isFullAccess || hasUnit("INSPECTION") || hasUnit("TURNING");
+
+  // ────────────────────────────────
+  const items = [
+    { label: "رسید و ارسال", to: "/maintenance/inout", allowed: canInOut },
+    { label: "موجودی دکل‌ها", to: "/rigs", allowed: canRigs },
+    { label: "دستورکارها", to: "/maintenance/turning", allowed: canTurning },
+    { label: "گروه‌های عملیاتی", to: "/groupops", allowed: canGroupOps },
+    { label: "گزارشات", to: "/maintenance/reports", allowed: canReports },
+  ];
+
+  // ────────────────────────────────
+  const handleBlockedClick = (e) => {
+    e.preventDefault();
+    alert("شما مجاز به دسترسی به این بخش نیستید.");
+  };
 
   return (
     <>
@@ -16,132 +75,42 @@ export default function Sidebar({ open, onClose }) {
         className={`sidebar ${open ? "is-open" : ""}`}
         dir="rtl"
         aria-hidden={!open}
-        aria-label="منوی کناری"
       >
         <header className="sb-header">
-          <b>منو</b>
-          <button className="sb-close" onClick={onClose} aria-label="بستن">
+          <b>منوی سامانه</b>
+          <button className="sb-close" onClick={onClose}>
             ✕
           </button>
         </header>
 
         <nav className="sb-menu">
-          {/* === درون‌چاهی === */}
-          <button
-            className="sb-item"
-            type="button"
-            onClick={() => setExpandDownhole(v => !v)}
-            aria-expanded={expandDownhole}
-            aria-controls="downhole-sub"
-          >
-            برون‌چاهی
-            <span className="chev">{expandDownhole ? "▾" : "▸"}</span>
-          </button>
-
-          {expandDownhole && (
-            <div className="sb-sub" id="downhole-sub">
+          {items.map((item) =>
+            item.allowed ? (
               <NavLink
-                to="/downhole/inout"
+                key={item.to}
+                to={item.to}
                 className={({ isActive }) =>
                   "sb-subitem" + (isActive ? " is-active" : "")
                 }
                 onClick={onClose}
                 end
               >
-                رسید و ارسال
+                {item.label}
               </NavLink>
-              {/* لینک گروه‌های عملیاتی از این بخش حذف شد */}
-            </div>
+            ) : (
+              <span
+                key={item.to}
+                className="sb-subitem disabled"
+                onClick={handleBlockedClick}
+              >
+                {item.label}
+              </span>
+            )
           )}
-
-          {/* === برون‌چاهی (Surface) — در صورت نیاز توسعه دهید === */}
-          <button
-            className="sb-item"
-            type="button"
-            onClick={() => setExpandSurface(v => !v)}
-            aria-expanded={expandSurface}
-            aria-controls="surface-sub"
-          >
-            درون‌چاهی
-            <span className="chev">{expandSurface ? "▾" : "▸"}</span>
-          </button>
-
-          {/* === تعمیرات و نگهداری لوله === */}
-          <button
-            className="sb-item"
-            type="button"
-            onClick={() => setExpandMaint(v => !v)}
-            aria-expanded={expandMaint}
-            aria-controls="maint-sub"
-          >
-            تعمیرات و نگهداری لوله
-            <span className="chev">{expandMaint ? "▾" : "▸"}</span>
-          </button>
-
-          {expandMaint && (
-            <div className="sb-sub" id="maint-sub">
-              <NavLink
-                to="/maintenance/inout"
-                className={({ isActive }) =>
-                  "sb-subitem" + (isActive ? " is-active" : "")
-                }
-                onClick={onClose}
-                end
-              >
-                رسید و ارسال
-              </NavLink>
-
-              <NavLink
-                to="/maintenance/request"
-                className={({ isActive }) =>
-                  "sb-subitem" + (isActive ? " is-active" : "")
-                }
-                onClick={onClose}
-                end
-              >
-                ثبت درخواست
-              </NavLink>
-            </div>
-          )}
-
-    
-
-          <NavLink
-            to="/maintenance/turning"
-            className={({ isActive }) =>
-              "sb-subitem" + (isActive ? " is-active" : "")
-            }
-            onClick={onClose}
-            end
-          >
-            تراشکاری
-          </NavLink>
-
-          {/* === آیتم مستقل: گروه‌های عملیاتی === */}
-          <NavLink
-            to="/groupops"
-            className={({ isActive }) =>
-              "sb-subitem" + (isActive ? " is-active" : "")
-            }
-            onClick={onClose}
-            end
-            aria-label="گروه‌های عملیاتی"
-          >
-            گروه‌های عملیاتی
-          </NavLink>      <NavLink
-            to="/maintenance/reports"
-            className={({ isActive }) =>
-              "sb-subitem" + (isActive ? " is-active" : "")
-            }
-            onClick={onClose}
-            end
-          >
-            گزارشات
-          </NavLink>
         </nav>
 
         <footer className="sb-footer">
-          <span className="muted">© سیستم</span>
+          <span className="muted">© واحد تعمیرات و نگهداری</span>
         </footer>
       </aside>
     </>

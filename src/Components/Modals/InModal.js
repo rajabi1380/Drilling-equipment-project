@@ -3,8 +3,8 @@ import React, { useMemo, useState } from "react";
 import ModalBase from "../common/ModalBase";
 import ItemPickerModal from "../common/ItemPickerModal";
 import { DatePicker, TimePicker, persian, persian_fa, faFmt } from "../../utils/date";
+import { RIGS } from "../../constants/catalog";
 
-/* ورودی کاتالوگ را به آرایه تبدیل می‌کند (آرایه/تابع/آبجکت‌های چندبخشی) */
 function normalizeCatalog(provider) {
   try {
     if (Array.isArray(provider)) return provider;
@@ -23,23 +23,37 @@ export default function InModal({ open = true, onClose, onSubmit, catalogProvide
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [size, setSize] = useState("");
+  const [count, setCount] = useState(1);
   const [enterDateObj, setEnterDateObj] = useState(null);
   const [status, setStatus] = useState("—");
   const [fromWhere, setFromWhere] = useState("");
+  const [billNo, setBillNo] = useState("");
   const [note, setNote] = useState("");
 
   const [pickOpen, setPickOpen] = useState(false);
   const catalog = useMemo(() => normalizeCatalog(catalogProvider), [catalogProvider]);
 
-  // پلاگین تایم‌پیکر را فقط یکبار بساز (ایمن برای آن‌مونت/ری‌ماینت)
-  const timePlugin = useMemo(() => <TimePicker position="bottom" />, []);
+  const unitOptions = useMemo(() => ["تراشکاری", "بازرسی", ...RIGS], []);
+  const isRig = RIGS.includes(fromWhere);
+  const isInspection = fromWhere === "بازرسی";
+  const isTurning = fromWhere === "تراشکاری";
 
-  const missing = { name: !name.trim(), code: !code.trim(), size: !size.trim() };
-  const hasError = missing.name || missing.code || missing.size;
+  const timePlugin = useMemo(() => <TimePicker position="bottom" />, []);
+  const missing = { name: !name.trim(), code: !code.trim(), size: !size.trim(), count: count < 1, fromWhere: !fromWhere.trim() };
+  const hasError = Object.values(missing).some(Boolean);
 
   const submit = () => {
-    if (hasError) return;
-    onSubmit({ name, code, size, enterDateObj, status, fromWhere, note });
+    if (hasError) {
+      alert("لطفاً فیلدهای الزامی را کامل کنید.");
+      return;
+    }
+
+    if ((isRig || isTurning || isInspection) && !billNo.trim()) {
+      alert("شماره بارنامه را وارد کنید.");
+      return;
+    }
+
+    onSubmit({ name, code, size, count, enterDateObj, status, fromWhere, billNo, note });
   };
 
   return (
@@ -47,7 +61,7 @@ export default function InModal({ open = true, onClose, onSubmit, catalogProvide
       <ModalBase
         open={open}
         onClose={onClose}
-        title="ثبت ورود"
+        title="📥 ثبت ورود تجهیز"
         size="lg"
         footer={
           <>
@@ -57,27 +71,31 @@ export default function InModal({ open = true, onClose, onSubmit, catalogProvide
         }
       >
         <div className="mb-form">
-          {/* ردیف اصلی: نام/کد/سایز + دکمه انتخاب (پس از سایز) */}
           <div className="row" style={{ gridTemplateColumns: "1fr 1fr 1fr auto" }}>
             <div className="col">
               <input className={`input ${missing.name ? "err" : ""}`} placeholder="* نام تجهیز" value={name} onChange={(e)=>setName(e.target.value)} />
-              {missing.name && <small className="err-msg">الزامی</small>}
             </div>
             <div className="col">
               <input className={`input ${missing.code ? "err" : ""}`} placeholder="* کد تجهیز" value={code} onChange={(e)=>setCode(e.target.value)} />
-              {missing.code && <small className="err-msg">الزامی</small>}
             </div>
             <div className="col">
               <input className={`input ${missing.size ? "err" : ""}`} placeholder="* سایز" value={size} onChange={(e)=>setSize(e.target.value)} />
-              {missing.size && <small className="err-msg">الزامی</small>}
             </div>
             <div className="col" style={{ alignItems: "flex-end" }}>
               <button type="button" className="pick-btn" onClick={()=>setPickOpen(true)}>انتخاب</button>
             </div>
           </div>
 
-          {/* تاریخ/وضعیت/مبدأ */}
           <div className="row">
+            <input
+              type="number"
+              min="1"
+              className={`input ${missing.count ? "err" : ""}`}
+              placeholder="* تعداد"
+              value={count}
+              onChange={(e)=>setCount(Number(e.target.value))}
+            />
+
             <DatePicker
               value={enterDateObj}
               onChange={setEnterDateObj}
@@ -89,19 +107,32 @@ export default function InModal({ open = true, onClose, onSubmit, catalogProvide
               containerClassName="rmdp-rtl"
               placeholder="تاریخ و ساعت ورود"
             />
+
             <select className="input" value={status} onChange={(e)=>setStatus(e.target.value)}>
-              <option>تعمیر شده</option>
-              <option>بازرسی شده</option>
-              <option>—</option>
+              <option value="—">وضعیت</option>
+              <option value="تعمیر شده">تعمیر شده</option>
+              <option value="بازرسی شده">بازرسی شده</option>
+               <option value="بازرسی شده"> </option>
             </select>
-            <input className="input" placeholder="واحد ارسالی" value={fromWhere} onChange={(e)=>setFromWhere(e.target.value)} />
+          </div>
+
+          <div className="row">
+            <select className={`input ${missing.fromWhere ? "err" : ""}`} value={fromWhere} onChange={(e)=>setFromWhere(e.target.value)}>
+              <option value="">* واحد ارسال‌کننده</option>
+              {unitOptions.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+
+            {(isRig || isTurning || isInspection) && (
+              <input className="input" placeholder="شماره بارنامه *" value={billNo} onChange={(e)=>setBillNo(e.target.value)} />
+            )}
           </div>
 
           <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e)=>setNote(e.target.value)} />
         </div>
       </ModalBase>
 
-      {/* لیست انتخاب تجهیز */}
       <ItemPickerModal
         open={pickOpen}
         onClose={()=>setPickOpen(false)}

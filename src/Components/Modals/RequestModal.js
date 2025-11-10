@@ -1,4 +1,5 @@
 // src/Components/Modals/RequestModal.js
+
 import React, { useEffect, useMemo, useState } from "react";
 import ModalBase from "../common/ModalBase";
 import ItemPickerModal from "../common/ItemPickerModal";
@@ -18,7 +19,8 @@ export default function RequestModal({
   const [size, setSize] = useState("");
   const [unit, setUnit] = useState("تراشکاری");
 
-  const status = tab === "inspection" ? "در انتظار بازرسی" : "در انتظار تعمیر";
+  const status =
+    tab === "inspection" ? "در انتظار بازرسی" : "در انتظار تعمیر";
 
   useEffect(() => {
     setUnit(tab === "inspection" ? "بازرسی" : "تراشکاری");
@@ -28,17 +30,18 @@ export default function RequestModal({
   const [endObj, setEndObj] = useState(null);
   const [desc, setDesc] = useState("");
 
-  // فقط برای تبِ تراشکاری
+  // فقط برای تب تراشکاری
   const [failureName, setFailureName] = useState("");
   const [failureCode, setFailureCode] = useState("");
 
-  // پیکر انتخاب
   const [pickOpen, setPickOpen] = useState(false);
 
-  // پلاگین تایم‌پیکر را فقط یک‌بار بساز (ایمن برای آن‌مانت/ریمونت)
-  const timePlugin = useMemo(() => <TimePicker position="bottom" />, []);
+  // ✅ استفاده درست از پلاگین
+  const timePlugin = useMemo(
+    () => <TimePicker position="bottom" />,
+    []
+  );
 
-  // اعتبارسنجی ساده
   const touched = useMemo(
     () => ({
       name: !name.trim(),
@@ -47,11 +50,17 @@ export default function RequestModal({
     }),
     [name, code, size]
   );
+
   const invalid = touched.name || touched.code || touched.size;
 
   const submit = () => {
-    if (invalid) return;
-    const payload = {
+    if (invalid) {
+      alert("نام، کد و سایز را تکمیل کنید.");
+      return;
+    }
+
+    onSubmit?.({
+      tab,
       reqType,
       name,
       code,
@@ -61,27 +70,32 @@ export default function RequestModal({
       startObj,
       endObj,
       desc,
-      extra: {},
-    };
-    if (tab === "turning") payload.extra = { failureName, failureCode };
-    onSubmit?.(payload);
-    onClose?.();
+      failureName,
+      failureCode,
+    });
   };
+
+  const normalizedCatalog = useMemo(
+    () =>
+      Array.isArray(catalog)
+        ? catalog
+        : [],
+    [catalog]
+  );
 
   return (
     <>
       <ModalBase
         open={open}
         onClose={onClose}
-        title="جزئیات درخواست"
+        title="درخواست کار"
         size="lg"
         footer={
           <>
-            <button type="button" className="btn" onClick={onClose}>
-              بستن
+            <button className="btn" onClick={onClose}>
+              انصراف
             </button>
             <button
-              type="button"
               className="btn success"
               disabled={invalid}
               onClick={submit}
@@ -92,31 +106,18 @@ export default function RequestModal({
         }
       >
         <div className="mb-form">
-          {/* نوع درخواست و تب‌ها */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-            <span>نوع درخواست:</span>
-            {["wo", "pm", "ed"].map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={`btn ${reqType === t ? "primary" : ""}`}
-                onClick={() => setReqType(t)}
-              >
-                {t.toUpperCase()}
-              </button>
-            ))}
-            <div style={{ marginInlineStart: "auto" }}>
-              <div className="btn-group">
+          {/* تب‌ها */}
+          <div className="row">
+            <div className="col">
+              <div className="tabs">
                 <button
-                  type="button"
-                  className={`btn ${tab === "turning" ? "primary" : ""}`}
+                  className={tab === "turning" ? "tab active" : "tab"}
                   onClick={() => setTab("turning")}
                 >
                   تراشکاری
                 </button>
                 <button
-                  type="button"
-                  className={`btn ${tab === "inspection" ? "primary" : ""}`}
+                  className={tab === "inspection" ? "tab active" : "tab"}
                   onClick={() => setTab("inspection")}
                 >
                   بازرسی
@@ -125,8 +126,11 @@ export default function RequestModal({
             </div>
           </div>
 
-          {/* نام/کد/سایز + دکمه انتخاب */}
-          <div className="row" style={{ gridTemplateColumns: "1fr 1fr 1fr auto" }}>
+          {/* نام / کد / سایز + انتخاب */}
+          <div
+            className="row"
+            style={{ gridTemplateColumns: "1fr 1fr 1fr auto" }}
+          >
             <div className="col">
               <input
                 className={`input ${touched.name ? "err" : ""}`}
@@ -134,9 +138,7 @@ export default function RequestModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              {touched.name && <small className="err-msg">الزامی</small>}
             </div>
-
             <div className="col">
               <input
                 className={`input ${touched.code ? "err" : ""}`}
@@ -144,9 +146,7 @@ export default function RequestModal({
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
               />
-              {touched.code && <small className="err-msg">الزامی</small>}
             </div>
-
             <div className="col">
               <input
                 className={`input ${touched.size ? "err" : ""}`}
@@ -154,91 +154,104 @@ export default function RequestModal({
                 value={size}
                 onChange={(e) => setSize(e.target.value)}
               />
-              {touched.size && <small className="err-msg">الزامی</small>}
             </div>
-
-            <div className="col" style={{ alignItems: "flex-end" }}>
-              <button type="button" className="pick-btn" onClick={() => setPickOpen(true)}>
+            <div className="col">
+              <button
+                className="btn sm"
+                type="button"
+                onClick={() => setPickOpen(true)}
+              >
                 انتخاب
               </button>
             </div>
           </div>
 
-          {/* واحد/وضعیت/شروع */}
+          {/* واحد، تاریخ‌ها */}
           <div className="row">
-            <input className="input" value={unit} readOnly disabled />
-            <input className="input" value={status} readOnly disabled />
-            <DatePicker
-              value={startObj}
-              onChange={setStartObj}
-              calendar={persian}
-              locale={persian_fa}
-              format={faFmt}
-              plugins={[timePlugin]}
-              inputClass="input"
-              containerClassName="rmdp-rtl"
-              placeholder="تاریخ درخواست/شروع"
-            />
+            <div className="col">
+              <label>واحد</label>
+              <input
+                className="input"
+                value={unit}
+                readOnly
+              />
+            </div>
+            <div className="col">
+              <label>تاریخ شروع</label>
+              <DatePicker
+                value={startObj}
+                onChange={setStartObj}
+                calendar={persian}
+                locale={persian_fa}
+                format={faFmt}
+                plugins={[timePlugin]}
+                inputClass="input"
+                placeholder="تاریخ شروع"
+              />
+            </div>
+            <div className="col">
+              <label>تاریخ پایان</label>
+              <DatePicker
+                value={endObj}
+                onChange={setEndObj}
+                calendar={persian}
+                locale={persian_fa}
+                format={faFmt}
+                plugins={[timePlugin]}
+                inputClass="input"
+                placeholder="تاریخ پایان"
+              />
+            </div>
           </div>
 
-          {/* پایان */}
-          <div className="row" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-            <DatePicker
-              value={endObj}
-              onChange={setEndObj}
-              calendar={persian}
-              locale={persian_fa}
-              format={faFmt}
-              plugins={[timePlugin]}
-              inputClass="input"
-              containerClassName="rmdp-rtl"
-              placeholder="تاریخ پایان عملیات"
-            />
-            <div className="col" />
-            <div className="col" />
-          </div>
-
-          {/* فیلدهای خرابی فقط در تراشکاری */}
+          {/* برای تراشکاری: اطلاعات خرابی */}
           {tab === "turning" && (
             <div className="row">
-              <input
-                className="input"
-                placeholder="نام خرابی"
-                value={failureName}
-                onChange={(e) => setFailureName(e.target.value)}
-              />
-              <input
-                className="input"
-                placeholder="کد خرابی"
-                value={failureCode}
-                onChange={(e) => setFailureCode(e.target.value)}
-              />
-              <div className="col" />
+              <div className="col">
+                <label>کد خرابی</label>
+                <input
+                  className="input"
+                  value={failureCode}
+                  onChange={(e) => setFailureCode(e.target.value)}
+                />
+              </div>
+              <div className="col">
+                <label>شرح خرابی</label>
+                <input
+                  className="input"
+                  value={failureName}
+                  onChange={(e) => setFailureName(e.target.value)}
+                />
+              </div>
             </div>
           )}
 
-          <textarea
-            className="input"
-            placeholder="توضیحات..."
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-          />
+          {/* توضیحات */}
+          <div className="row">
+            <div className="col">
+              <label>توضیحات</label>
+              <textarea
+                className="input"
+                rows={3}
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
       </ModalBase>
 
-      {/* پیکر انتخاب مشترک */}
       <ItemPickerModal
         open={pickOpen}
         onClose={() => setPickOpen(false)}
-        catalog={catalog}
-        onPick={(it) => {
-          const s0 = Array.isArray(it?.sizes) ? it.sizes[0] || "" : it?.size || "";
-          if (it?.name) setName(it.name);
-          if (it?.code) setCode(it.code);
-          if (s0) setSize(s0);
-          setPickOpen(false);
-        }}
+        catalog={normalizedCatalog}
         title="انتخاب از لیست تجهیزات"
+        onPick={(item) => {
+          setPickOpen(false);
+          if (item?.name) setName(item.name);
+          if (item?.code) setCode(item.code);
+          if (item?.size) setSize(item.size);
+        }}
       />
     </>
   );

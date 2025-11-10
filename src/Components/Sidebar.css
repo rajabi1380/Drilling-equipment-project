@@ -1,104 +1,162 @@
 /* src/Components/Sidebar.css */
 
 /* بک‌دراپ وقتی سایدبار باز است */
-.sb-backdrop{
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.35);
+.sb-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
   z-index: 999;
 }
 
 /* سایدبار: ثابت سمت راست — پیش‌فرض بسته */
-.sidebar{
+.sidebar {
   position: fixed;
-  top: 0; bottom: 0; right: 0;
-  width: 300px; max-width: 90vw;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 300px;
+  max-width: 90vw;
   background: var(--panel);
   border-left: 1px solid var(--line);
   padding: 14px;
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
   z-index: 1000;
 
-  /* مخفی بودن پیش‌فرض: بیرون از صفحه به سمت راست */
   transform: translateX(100%);
-  transition: transform .25s ease;
+  transition: transform 0.25s ease;
 }
-.sidebar.is-open{ transform: translateX(0); }
+.sidebar.is-open {
+  transform: translateX(0);
+}
 
 /* هدر سایدبار */
-.sb-header{
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:8px;
+.sb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
-.sb-close{
-  border:1px solid var(--line); background:#fff; color:var(--text);
-  border-radius:10px;
-  padding:6px 10px; cursor:pointer;
+.sb-close {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
 }
 
 /* لیست منو */
-.sb-menu{ overflow:auto; padding-inline: 2px; }
+.sb-menu {
+  overflow: auto;
+  padding-inline: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* فاصله بیشتر بین گروه‌ها */
+}
 
-/* آیتم‌های سطح اول: هم برای button هم برای a */
+/* آیتم‌های سطح اول */
 .sb-item,
-a.sb-item{
+a.sb-item {
   width: 100%;
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px; margin:6px 0;
-  border:1px solid var(--line); border-radius:10px;
-  background:#fff; color:var(--text); text-align:right; cursor:pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  text-align: right;
+  cursor: pointer;
   text-decoration: none;
+  font-weight: 500;
+  transition: background 0.2s ease;
+  margin-bottom: 4px;
 }
 .sb-item:hover,
-a.sb-item:hover{ background:var(--muted); }
-.chev{ color:var(--sub); }
+a.sb-item:hover {
+  background: var(--muted);
+}
+.chev {
+  color: var(--sub);
+}
 
 /* زیرمنو */
-.sb-sub{
-  display:flex; flex-direction:column;
-  gap:8px;
+.sb-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 2px 8px 8px;
+  margin-top: 6px;
 }
 
 /* لینک‌های زیرمنو (NavLink) */
-.sb-subitem{
-  display:block; width:100%;
-  text-align:right;
-  font-size:13px; line-height:1.7;
-  padding:6px 10px;
-  border:1px dashed var(--line); border-radius:8px;
-  background:#fff; color:inherit; text-decoration:none;
-  transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
+.sb-subitem {
+  display: block;
+  width: 100%;
+  text-align: right;
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 8px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
+  margin-bottom: 6px;
 }
-.sb-subitem:hover{
-  background:var(--muted);
-  border-color:#dfe3e8;
+.sb-subitem:hover {
+  background: var(--muted);
+  border-color: #dfe3e8;
 }
-/* فوکِس با کیبورد */
-.sb-subitem:focus-visible{
-  outline:none;
-  border-color:var(--accent);
-  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+.sb-subitem:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
-/* حالت active وقتی همان مسیر باز است (NavLink کلاس is-active می‌دهد) */
-.sb-subitem.is-active{
-  background:var(--muted);
-  border-color:var(--accent);
-  border-style:solid;
+.sb-subitem.is-active {
+  background: var(--muted);
+  border-color: var(--accent);
+  border-style: solid;
+}
+
+/* آیتم غیرفعال */
+.sb-subitem.disabled {
+  color: #aaa;
+  cursor: not-allowed;
+  pointer-events: all;
+  opacity: 0.6;
+}
+.sb-subitem.disabled:hover {
+  color: #999;
 }
 
 /* فوتر */
-.sb-footer{ margin-top:auto; padding-top:8px; color:var(--sub); }
-
-/* ورودی‌ها راست‌به‌چپ (فقط در سایدبار در صورت نیاز) */
-[dir="rtl"] .sidebar input{ direction: rtl; }
-
-/* ریسپانسیو */
-@media (max-width: 480px){
-  .sidebar{ width: 270px; }
+.sb-footer {
+  margin-top: auto;
+  padding-top: 8px;
+  color: var(--sub);
+  font-size: 13px;
 }
 
-/* احترام به کاهش موشن کاربر */
-@media (prefers-reduced-motion: reduce){
-  .sidebar{ transition: none; }
+/* ورودی‌ها راست‌به‌چپ (در صورت نیاز) */
+[dir="rtl"] .sidebar input {
+  direction: rtl;
+}
+
+/* ریسپانسیو */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 270px;
+  }
+}
+
+/* کاهش موشن برای کاربران خاص */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
 }

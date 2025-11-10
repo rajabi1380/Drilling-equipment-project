@@ -1,54 +1,175 @@
 // src/App.jsx
 import React, { useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 
 import Navbar from "./Components/Navbar";
 import Sidebar from "./Components/Sidebar";
+
 import InOut from "./Components/InOut";
 import Turning from "./Components/Turning";
 import DownholeInOut from "./Components/DownholeInOut";
-import GroupOpsPage from "./Components/GroupOpsPage"; // ← فایل کامپوننت گروه‌های عملیاتی
+import GroupOpsPage from "./Components/GroupOpsPage";
 import Reports from "./Components/Report";
+import Request from "./Components/Request";
+import Login from "./Components/Login";
+import RigStock from "./Components/RigStock";
+
+import { AuthProvider, useAuth } from "./Components/Context/AuthContext";
 
 import "./styles/base.css";
-import Request from "./Components/Request";
 import "./App.css";
 
 const Dashboard = () => <h1>داشبورد</h1>;
 
-export default function App() {
+/* ✅ روت محافظت شده: اگر لاگین نباشه می‌فرسته /login */
+function ProtectedRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
+
+/* ✅ شِل اصلی برنامه: کنترل نمایش Navbar/Sidebar بر اساس لاگین و آدرس */
+function AppContent() {
   const [sbOpen, setSbOpen] = useState(false);
   const holidaysFa = ["1403-01-01", "1403-01-02", "1403-03-14", "1403-06-31"];
+  const { user, logout } = useAuth();
+  const location = useLocation();
+
+  const isLoginPage = location.pathname === "/login";
 
   return (
     <div dir="rtl">
-      <Navbar
-        onLogout={() => alert("خروج")}
-        onHamburger={() => setSbOpen(true)}
-        holidaysFa={holidaysFa}
-        notifications={[]}
-      />
+      {/* 🔒 فقط وقتی لاگین کرده و توی /login نیست، Navbar و Sidebar نمایش داده می‌شود */}
+      {!isLoginPage && user && (
+        <>
+          <Navbar
+            onLogout={logout}
+            onHamburger={() => setSbOpen(true)}
+            holidaysFa={holidaysFa}
+            notifications={[]}
+          />
+          <Sidebar open={sbOpen} onClose={() => setSbOpen(false)} />
+        </>
+      )}
 
-      <Sidebar open={sbOpen} onClose={() => setSbOpen(false)} />
-
-      <main className="page">
+      {/* برای صفحه لاگین استایل ساده، برای بقیه همان .page */}
+      <main className={!isLoginPage && user ? "page" : ""}>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          {/* صفحه لاگین: اگر لاگین است، دیگه نگذار اینجا بماند */}
+          <Route
+            path="/login"
+            element={
+              user ? <Navigate to="/" replace /> : <Login />
+            }
+          />
 
-          {/* نگهداری */}
-          <Route path="/maintenance/inout" element={<InOut />} />
-          <Route path="/maintenance/request" element={<Request />} />
-          <Route path="/maintenance/turning" element={<Turning />} />
-           <Route path="/maintenance/reports" element={<Reports />} />
+          {/* داشبورد و بقیه صفحات همگی محافظت‌شده */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* نگهداری - رسید/ارسال */}
+          <Route
+            path="/maintenance/inout"
+            element={
+              <ProtectedRoute>
+                <InOut />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* درخواست‌ها */}
+          <Route
+            path="/maintenance/request"
+            element={
+              <ProtectedRoute>
+                <Request />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* تراشکاری */}
+          <Route
+            path="/maintenance/turning"
+            element={
+              <ProtectedRoute>
+                <Turning />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* گزارش‌ها */}
+          <Route
+            path="/maintenance/reports"
+            element={
+              <ProtectedRoute>
+                <Reports />
+              </ProtectedRoute>
+            }
+          />
 
           {/* داون‌هول */}
-          <Route path="/downhole/inout" element={<DownholeInOut />} />
-<Route path="/groupops" element={<GroupOpsPage />} />
+          <Route
+            path="/downhole/inout"
+            element={
+              <ProtectedRoute>
+                <DownholeInOut />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* 404 */}
-          <Route path="*" element={<h1>صفحهٔ موردنظر یافت نشد!</h1>} />
+          {/* گروه‌های عملیاتی */}
+          <Route
+            path="/groupops"
+            element={
+              <ProtectedRoute>
+                <GroupOpsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* موجودی دکل‌ها */}
+          <Route
+            path="/rigs"
+            element={
+              <ProtectedRoute>
+                <RigStock />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* هر آدرس اشتباه → اگر لاگین است بفرست داشبورد؛ اگر نه → لاگین */}
+          <Route
+            path="*"
+            element={
+              user ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
         </Routes>
       </main>
     </div>
+  );
+}
+
+/* ✅ روت اصلی: کل اپ داخل AuthProvider */
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

@@ -1,9 +1,11 @@
-// src/constants/catalog.js
+// ===============================
+// 📦 کاتالوگ تجهیزات و ثابت‌ها
+// ===============================
 
-// ——— دکل‌ها ———
+// --- دکل‌ها ---
 export const RIGS = ["دکل 13", "دکل 21", "دکل 24", "دکل 28", "دکل 31", "دکل 38"];
 
-// ——— اعضای تیم تعمیرات (در صورت نیاز) ———
+// --- اعضای تیم تعمیرات ---
 export const TEAM_MEMBERS = [
   "محسن جلالی زاده",
   "هومن رجبی",
@@ -13,8 +15,7 @@ export const TEAM_MEMBERS = [
   "میثم عزیزی",
 ];
 
-// ——— کاتالوگ خرابی‌ها (برای انتخاب در مدال خروج → تراشکاری) ———
-// هر آیتم: { id, code, name }
+// --- انواع خرابی‌ها ---
 export const FAILURE_ITEMS = [
   { id: "F001", code: "BRG-01", name: "خرابی یاتاقان / بلبرینگ" },
   { id: "F002", code: "SEAL-02", name: "نشتی پکینگ/سیل" },
@@ -26,77 +27,172 @@ export const FAILURE_ITEMS = [
   { id: "F008", code: "WORN-08", name: "سایش بیش از حد" },
 ];
 
-// ——— کاتالوگ تجهیزات هر واحد ———
-// هر آیتم: { name, code, size? | sizes?[] }
+// ===============================
+// ⚙️ تابع تولید کد یونیک تجهیز
+// ===============================
+function makeEquipCode(baseCode, size, index) {
+  const cleanSize = String(size)
+    .replace(/[^0-9.]/g, "")
+    .replace(".", "");
+  const serial = String(index).padStart(3, "0");
+  return `${baseCode}-${cleanSize}-${serial}`;
+}
+
+// ===============================
+// 🎯 تجهیزات اختصاصی هر واحد
+// ===============================
+
+// --- سطحی (Surface) ---
 const SURFACE_TOOLS = [
-  { name: "Kelly",        code: "KLY-2005", sizes: ["3.5in","4in"] },
-  { name: "Drill Pipe",   code: "DPI-4500", sizes: ["3.5in","5in","5.5in"] },
-  { name: "Drill Collar", code: "DCL-3012", sizes: ["6.5in","8in"] },
-  { name: "HWDP",         code: "HWD-5507", sizes: ["3.5in","5in"] },
-  { name: "Rotary Hose",  code: "RHS-2210", sizes: ["2in","3in"] },
-  { name: "Stand Pipe",   code: "STP-1180", sizes: ["3in","4in"] },
+  ...Array.from({ length: 5 }, (_, i) => ({
+    name: "Kelly",
+    code: makeEquipCode("KLY", "3.5in", i + 1),
+    size: "3.5in",
+  })),
+  ...Array.from({ length: 5 }, (_, i) => ({
+    name: "Drill Pipe",
+    code: makeEquipCode("DPI", "5in", i + 1),
+    size: "5in",
+  })),
 ];
 
+// --- BOP ---
 const BOP_ITEMS = [
-  { name: "BOP Stack",         code: "BOP-7000", sizes: ["7-1/16in","9in","13-5/8in"] },
-  { name: "Annular Preventer", code: "ANN-5100", sizes: ["7-1/16in","13-5/8in"] },
-  { name: "Ram Preventer",     code: "RAM-5200", sizes: ["13-5/8in"] },
-  { name: "Accumulator Unit",  code: "ACC-5300", sizes: ["3000psi","5000psi"] },
-  { name: "Hydraulic Control", code: "HCU-5400", sizes: ["STD"] },
+  ...Array.from({ length: 3 }, (_, i) => ({
+    name: "Annular Preventer",
+    code: makeEquipCode("BOP-ANN", "13-5/8in", i + 1),
+    size: "13-5/8in",
+  })),
+  ...Array.from({ length: 2 }, (_, i) => ({
+    name: "Ram Preventer",
+    code: makeEquipCode("BOP-RAM", "13-5/8in", i + 1),
+    size: "13-5/8in",
+  })),
 ];
 
+// --- چوک مانیفولد (Choke) ---
 const CHOKE_MANIFOLD = [
-  { name: "Choke Valve",    code: "CHK-6100", sizes: ["2in","3in"] },
-  { name: "Kill Line",      code: "KIL-6200", sizes: ["2in","3in"] },
-  { name: "Choke Manifold", code: "CMF-6300", sizes: ["3in","4in"] },
-  { name: "Pressure Gauge", code: "GAG-6400", sizes: ["5000psi","10000psi"] },
-  { name: "Buffer Tank",    code: "BFT-6500", sizes: ["2m³","5m³"] },
+  ...Array.from({ length: 4 }, (_, i) => ({
+    name: "Choke Valve",
+    code: makeEquipCode("CHK-VLV", "3in", i + 1),
+    size: "3in",
+  })),
+  ...Array.from({ length: 3 }, (_, i) => ({
+    name: "Pressure Gauge",
+    code: makeEquipCode("CHK-GAG", "10000psi", i + 1),
+    size: "10000psi",
+  })),
 ];
 
-// ——— کاتالوگ واحد «تعمیرات و نگهداری لوله» (PIPE) ———
+// --- تعمیرات و نگهداری لوله (Pipe) ---
 const PIPE_ITEMS = [
-  { name: "Drill Pipe",               code: "PIPE-DP-35",  sizes: ["3.5in"] },
-  { name: "Drill Pipe",               code: "PIPE-DP-50",  sizes: ["5in"] },
-  { name: "Drill Pipe",               code: "PIPE-DP-55",  sizes: ["5.5in"] },
-
-  { name: "Heavy Weight Drill Pipe",  code: "PIPE-HWDP-35", sizes: ["3.5in"] },
-  { name: "Heavy Weight Drill Pipe",  code: "PIPE-HWDP-50", sizes: ["5in"] },
-
-  { name: "Drill Collar",             code: "PIPE-DC-65",  sizes: ["6.5in"] },
-  { name: "Drill Collar",             code: "PIPE-DC-80",  sizes: ["8in"] },
-
-  { name: "Kelly",                    code: "PIPE-KLY-35", sizes: ["3.5in"] },
-  { name: "Kelly",                    code: "PIPE-KLY-40", sizes: ["4in"] },
-
-  { name: "Kelly T",                  code: "PIPE-KT-4",   sizes: ["4in"] },
-
-  // چند مورد تکمیلیِ رایج
-  { name: "Casing",                   code: "PIPE-CSG-95", sizes: ["9-5/8in"] },
-  { name: "Tubing",                   code: "PIPE-TBG-27", sizes: ["2-7/8in"] },
+  ...Array.from({ length: 10 }, (_, i) => ({
+    name: "Drill Pipe",
+    code: makeEquipCode("PIPE-DP", "5in", i + 1),
+    size: "5in",
+  })),
+  ...Array.from({ length: 6 }, (_, i) => ({
+    name: "Heavy Weight Drill Pipe",
+    code: makeEquipCode("PIPE-HWDP", "5in", i + 1),
+    size: "5in",
+  })),
+  ...Array.from({ length: 8 }, (_, i) => ({
+    name: "Drill Collar",
+    code: makeEquipCode("PIPE-DC", "6.5in", i + 1),
+    size: "6.5in",
+  })),
 ];
 
-// ——— دسترسی به کاتالوگ براساس واحد ———
-export function getCatalogForUnit(unitId) {
-  switch (String(unitId || "").toLowerCase()) {
+// --- درون چاهی ---
+const DOWNHOLE_ITEMS = [
+  ...Array.from({ length: 4 }, (_, i) => ({
+    name: "Mud Motor",
+    code: makeEquipCode("DH-MTR", "8in", i + 1),
+    size: "8in",
+  })),
+  ...Array.from({ length: 4 }, (_, i) => ({
+    name: "Stabilizer",
+    code: makeEquipCode("DH-STB", "6.5in", i + 1),
+    size: "6.5in",
+  })),
+];
+
+// --- برون چاهی ---
+const UPHOLE_ITEMS = [
+  ...Array.from({ length: 5 }, (_, i) => ({
+    name: "Elevator",
+    code: makeEquipCode("UH-ELE", "5in", i + 1),
+    size: "5in",
+  })),
+  ...Array.from({ length: 5 }, (_, i) => ({
+    name: "Spider",
+    code: makeEquipCode("UH-SPD", "5in", i + 1),
+    size: "5in",
+  })),
+];
+
+// --- مانده‌یابی ---
+const MANDEYABI_ITEMS = [
+  ...Array.from({ length: 3 }, (_, i) => ({
+    name: "Fishing Tool",
+    code: makeEquipCode("MB-FSH", "5in", i + 1),
+    size: "5in",
+  })),
+  ...Array.from({ length: 3 }, (_, i) => ({
+    name: "Crossover",
+    code: makeEquipCode("MB-CRO", "3.5in", i + 1),
+    size: "3.5in",
+  })),
+];
+
+// ===============================
+// 🧠 تجمیع کامل برای ادمین
+// ===============================
+export const FULL_CATALOG = [
+  ...SURFACE_TOOLS,
+  ...BOP_ITEMS,
+  ...CHOKE_MANIFOLD,
+  ...PIPE_ITEMS,
+  ...DOWNHOLE_ITEMS,
+  ...UPHOLE_ITEMS,
+  ...MANDEYABI_ITEMS,
+];
+
+// ===============================
+// ⚙️ تابع اصلی دسترسی براساس واحد و نقش
+// ===============================
+export function getCatalogForUnit(unitId, role = "user") {
+  const u = String(unitId || "").toLowerCase();
+  const isAdmin = ["admin", "manager", "super"].includes(String(role).toLowerCase());
+
+  if (isAdmin) {
+    return FULL_CATALOG; // ادمین‌ها کل تجهیزات رو می‌بینن
+  }
+
+  switch (u) {
     case "surface": return SURFACE_TOOLS;
-    case "bop":     return BOP_ITEMS;
-    case "choke":   return CHOKE_MANIFOLD;
+    case "bop": return BOP_ITEMS;
+    case "choke": return CHOKE_MANIFOLD;
     case "pipe":
-    case "pipes":
-    case "pipe-maintenance":
-      return PIPE_ITEMS;
-    default:
-      return [];
+    case "pipe-maintenance": return PIPE_ITEMS;
+    case "downhole": return DOWNHOLE_ITEMS;
+    case "uphole": return UPHOLE_ITEMS;
+    case "mandeyabi": return MANDEYABI_ITEMS;
+    default: return [];
   }
 }
 
-// در صورت نیاز به import مستقیم
+// ===============================
+// 📋 اکسپورت گروهی
+// ===============================
 export const CATALOG = {
   surface: SURFACE_TOOLS,
   bop: BOP_ITEMS,
   choke: CHOKE_MANIFOLD,
   pipe: PIPE_ITEMS,
+  downhole: DOWNHOLE_ITEMS,
+  uphole: UPHOLE_ITEMS,
+  mandeyabi: MANDEYABI_ITEMS,
 };
 
-// اکسپورت‌های کمکی
 export const FAILURE_CATALOG = FAILURE_ITEMS;

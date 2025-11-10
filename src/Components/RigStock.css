@@ -1,0 +1,29 @@
+.rig-stock-page {
+  padding: 24px;
+  font-family: "Vazirmatn", sans-serif;
+}
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+.stock-table th,
+.stock-table td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: right;
+}
+.stock-table th {
+  background: #f0f4f8;
+}
+.input {
+  padding: 8px 10px;
+  width: 300px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+}
+.empty {
+  text-align: center;
+  color: #888;
+}

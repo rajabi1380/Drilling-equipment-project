@@ -1,0 +1,103 @@
+/* src/styles/Login.css */
+
+.login-container {
+  background-color: #ffffff;
+  padding: 2rem;
+  margin: 5vh auto;
+  max-width: 400px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  font-family: "Vazirmatn", sans-serif;
+  direction: rtl;
+  text-align: right;
+  box-sizing: border-box;
+}
+
+.login-container h2 {
+  margin-bottom: 1.8rem;
+  font-size: 1.6rem;
+  color: #222;
+  text-align: center;
+}
+
+.login-container label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.7rem;
+  margin-bottom: 1.2rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+  background-color: #fdfdfd;
+}
+
+.login-container input:focus {
+  border-color: #2196f3;
+  outline: none;
+  background-color: #f9fbff;
+}
+
+.login-container button[type="submit"] {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #2196f3;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+.login-container button[type="submit"]:hover {
+  background-color: #1976d2;
+}
+
+.forgot-password {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  color: #2196f3;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.forgot-password:hover {
+  color: #1565c0;
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* ریسپانسیو برای موبایل */
+@media (max-width: 480px) {
+  .login-container {
+    margin: 2vh 1rem;
+    padding: 1.5rem;
+    border-radius: 10px;
+  }
+
+  .login-container h2 {
+    font-size: 1.4rem;
+  }
+
+  .login-container input,
+  .login-container button {
+    font-size: 0.95rem;
+  }
+}
