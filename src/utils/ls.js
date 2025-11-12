@@ -1,16 +1,12 @@
 // utils/ls.js
 // localStorage helper with namespacing, JSON safety, and role-based support
 
-const APP_NAMESPACE = "my_app"; // می‌تونی به اسم پروژه‌ت تغییر بدی
+const APP_NAMESPACE = "my_app"; // در صورت نیاز ثابت نگه دار
 
 // تولید کلید کامل با فضای نام
 const nsKey = (key) => `${APP_NAMESPACE}:${key}`;
 
-/**
- * خواندن داده از localStorage
- * @param {string} key - کلید بدون namespace
- * @param {any} fallback - مقدار پیش‌فرض در صورت نبود یا خطا
- */
+// ---------- ابزارهای عمومی ----------
 export function loadLS(key, fallback = null) {
   try {
     const raw = localStorage.getItem(nsKey(key));
@@ -20,11 +16,6 @@ export function loadLS(key, fallback = null) {
   }
 }
 
-/**
- * ذخیره‌سازی داده در localStorage
- * @param {string} key - کلید بدون namespace
- * @param {any} data - داده‌ای که باید ذخیره شود
- */
 export function saveLS(key, data) {
   try {
     localStorage.setItem(nsKey(key), JSON.stringify(data));
@@ -34,10 +25,6 @@ export function saveLS(key, data) {
   }
 }
 
-/**
- * حذف کلید از localStorage
- * @param {string} key - کلید بدون namespace
- */
 export function removeLS(key) {
   try {
     localStorage.removeItem(nsKey(key));
@@ -47,25 +34,43 @@ export function removeLS(key) {
   }
 }
 
-/**
- * بررسی لاگین بودن کاربر
- */
-export function isLoggedIn() {
-  return !!loadLS("auth_user");
+// ---------- سازگاری با AuthContext ----------
+const AUTH_KEY = "auth_user_v1"; // همان چیزی که در AuthContext.jsx استفاده می‌شود
+
+// خواندن کاربر (ابتدا بدون namespace برای سازگاری با AuthContext، در صورت نبود، namespaced)
+function readAuthUser() {
+  try {
+    const rawDirect = localStorage.getItem(AUTH_KEY);
+    if (rawDirect) return JSON.parse(rawDirect);
+
+    // fallback: اگر قبلاً با namespace ذخیره شده بود
+    const rawNS = localStorage.getItem(nsKey(AUTH_KEY));
+    if (rawNS) return JSON.parse(rawNS);
+
+    // fallback قدیمی: auth_user (قدیمی/بدون نسخه)
+    const rawOld = localStorage.getItem("auth_user");
+    if (rawOld) return JSON.parse(rawOld);
+
+    const rawOldNS = localStorage.getItem(nsKey("auth_user"));
+    if (rawOldNS) return JSON.parse(rawOldNS);
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
-/**
- * دریافت نقش کاربر لاگین‌شده
- */
+export function isLoggedIn() {
+  return !!readAuthUser();
+}
+
 export function getUserRole() {
-  const user = loadLS("auth_user");
+  const user = readAuthUser();
   return user?.role || null;
 }
 
-/**
- * دریافت نام کامل کاربر
- */
 export function getUserName() {
-  const user = loadLS("auth_user");
-  return user?.name || null;
+  const user = readAuthUser();
+  // با AuthContext: displayName داریم؛ name هم برای سازگاری پشتیبانی می‌شود
+  return user?.displayName || user?.name || null;
 }

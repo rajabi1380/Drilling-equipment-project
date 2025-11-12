@@ -2,108 +2,98 @@
 // File: src/Components/RigStock.js
 // ===============================
 import React, { useState, useMemo, useEffect } from "react";
-import { splitKey } from "../utils/Key";
-import { loadRigInv, LS_RIG_INV } from "../utils/Riginventory";
+import { keyOf, splitKey } from "../utils/Key";
+import { loadRigInv, LS_RIG_INV } from "../utils/rigInventory";
 import { exportCSV, exportDOC } from "../utils/export";
-import { RIGS } from "../constants/catalog";
+import { RIGS, getCatalogForUnit } from "../constants/catalog";
 import { useAuth } from "./Context/AuthContext";
 import "./RigStock.css";
 
-/** ساخت جدول از داده‌های rig_inventory_v1 */
+/** 🧩 ساخت جدول از داده‌های rig_inventory_v1 */
 function buildRigStockFromRigInv(rigInv) {
   const result = [];
   const rigs = rigInv?.rigs || {};
-
   Object.entries(rigs).forEach(([rigName, itemsMap]) => {
     if (!itemsMap || typeof itemsMap !== "object") return;
-
     Object.entries(itemsMap).forEach(([itemKey, qty]) => {
       const count = Number(qty || 0);
       if (count > 0) {
         const { name, code, size } = splitKey(itemKey);
-        result.push({
-          rig: rigName,
-          name,
-          code,
-          size,
-          count,
-        });
+        result.push({ rig: rigName, name, code, size, count });
       }
     });
   });
-
-  // مرتب‌سازی بر اساس نام دکل و تجهیز
   result.sort((a, b) => {
-    if (a.rig === b.rig) {
-      return (a.name || "").localeCompare(b.name || "", "fa");
-    }
+    if (a.rig === b.rig) return (a.name || "").localeCompare(b.name || "", "fa");
     return (a.rig || "").localeCompare(b.rig || "", "fa");
   });
-
   return result;
 }
 
 export default function RigStock() {
-  const { isAdmin, hasUnit } = useAuth();
+  const { isAdmin, hasUnit, currentUnit } = useAuth();
 
-  // ───────── state ها ─────────
-  const [rigInv, setRigInv] = useState(() => loadRigInv());
-  const [filters, setFilters] = useState({ name: "", code: "", rig: "" });
-  const [appliedFilters, setAppliedFilters] = useState({
-    name: "",
-    code: "",
-    rig: "",
-  });
+  // ✅ فقط ادمین و رئیس (کلیدهای نقش را اگر متفاوت‌اند، همینجا تغییر بده)
+  const canSeeAllRigs = isAdmin || hasUnit("MODIR") || hasUnit("RIASAT");
 
-  // ───────── مجوز مشاهده ─────────
+  // ───────── مجوز مشاهده صفحه ─────────
   const canView =
-    isAdmin ||
+    canSeeAllRigs || // رئیس/ادمین قطعاً می‌بینند
     hasUnit("DOWNHOLE") ||
     hasUnit("UPHOLE") ||
     hasUnit("MANDEYABI") ||
     hasUnit("PIPE");
 
-  // ───────── همگام‌سازی با localStorage ─────────
-  useEffect(() => {
-    if (!canView) return;
+  // ───────── state ها ─────────
+  const [rigInv, setRigInv] = useState(() => loadRigInv());
+  const [filters, setFilters] = useState({ name: "", code: "", rig: "" });
+  const [appliedFilters, setAppliedFilters] = useState({ name: "", code: "", rig: "" });
 
+  // 🔒 لیست تجهیزات مجازِ همین واحد (اگر دسترسی سراسری نداریم)
+  const allowedKeys = useMemo(() => {
+    if (!canView) return new Set();
+    if (canSeeAllRigs) return null; // null یعنی فیلتر واحدی اعمال نشود
+    const cat = getCatalogForUnit(currentUnit || "PIPE") || [];
+    const set = new Set(
+      cat.map((it) => keyOf(it.name, it.code, it.size))
+    );
+    return set;
+  }, [canView, canSeeAllRigs, currentUnit]);
+
+  // ───────── همگام‌سازی با localStorage و رویدادها ─────────
+  useEffect(() => {
     const fetchData = () => setRigInv(loadRigInv());
     fetchData();
 
     const onStorage = (e) => {
-      if (e.key === LS_RIG_INV || e.key === "rig_refresh_flag") {
-        fetchData();
-      }
+      if (e.key === LS_RIG_INV || e.key === "rig_refresh_flag") fetchData();
     };
+    const onUpdated = () => fetchData();
 
     window.addEventListener("storage", onStorage);
+    window.addEventListener("rig_inventory_updated", onUpdated);
 
-    // 🔄 همگام‌سازی خودکار هر 1.5 ثانیه
-    const intervalId = setInterval(() => {
-      const latest = loadRigInv();
-      setRigInv((prev) =>
-        JSON.stringify(prev) === JSON.stringify(latest) ? prev : latest
-      );
-    }, 1500);
+    const intervalId = setInterval(fetchData, 1500);
 
-    // 🧹 پاک‌سازی هنگام خروج از صفحه
     return () => {
       clearInterval(intervalId);
       window.removeEventListener("storage", onStorage);
-      setRigInv({ rigs: {} });
+      window.removeEventListener("rig_inventory_updated", onUpdated);
     };
-  }, [canView]);
+  }, []);
 
-  // ───────── همه اقلام ─────────
-  const allItems = useMemo(
-    () => (canView ? buildRigStockFromRigInv(rigInv) : []),
-    [rigInv, canView]
-  );
+  // ───────── داده‌ها (با اعمال محدودیت واحد) ─────────
+  const allItems = useMemo(() => {
+    if (!canView) return [];
+    const base = buildRigStockFromRigInv(rigInv);
+    if (!allowedKeys) return base; // null => کاربر دارای دسترسی سراسری است
+    // فقط تجهیزاتی که در کاتالوگ واحد فعلی هستند نمایش داده می‌شوند
+    return base.filter((it) => allowedKeys.has(keyOf(it.name, it.code, it.size)));
+  }, [rigInv, canView, allowedKeys]);
 
-  // ───────── فیلترها ─────────
+  // ───────── فیلتر UI (نام/کد/دکل) ─────────
   const filtered = useMemo(() => {
     if (!canView) return [];
-
     const f = appliedFilters;
     return allItems.filter((item) => {
       const byName = f.name
@@ -117,43 +107,12 @@ export default function RigStock() {
     });
   }, [allItems, appliedFilters, canView]);
 
-  // ───────── کنترل فیلترها ─────────
+  // ───────── کنترل فیلتر ─────────
   const applyFilters = () => setAppliedFilters(filters);
   const clearFilters = () => {
     const empty = { name: "", code: "", rig: "" };
     setFilters(empty);
     setAppliedFilters(empty);
-  };
-
-  // ───────── خروجی‌ها ─────────
-  const handleExportCSV = () => {
-    if (!filtered.length) return;
-    const headers = ["دکل", "نام تجهیز", "کد", "سایز", "تعداد"];
-    const rows = filtered.map((r) => ({
-      دکل: r.rig,
-      "نام تجهیز": r.name,
-      کد: r.code,
-      سایز: r.size,
-      تعداد: r.count,
-    }));
-    exportCSV(`RigStock-${Date.now()}.csv`, headers, rows);
-  };
-
-  const handleExportWord = () => {
-    if (!filtered.length) return;
-    const rows = filtered.map((r) => ({
-      دکل: r.rig,
-      "نام تجهیز": r.name,
-      کد: r.code,
-      سایز: r.size,
-      تعداد: r.count,
-    }));
-    exportDOC(
-      `RigStock-${Date.now()}.doc`,
-      "موجودی دکل‌ها",
-      ["دکل", "نام تجهیز", "کد", "سایز", "تعداد"],
-      rows
-    );
   };
 
   // ───────── گزینه‌های دکل ─────────
@@ -170,22 +129,19 @@ export default function RigStock() {
     []
   );
 
-  // ───────── نمایش پیام دسترسی ─────────
+  // ───────── دسترسی ─────────
   if (!canView) {
     return (
       <div className="rig-stock-page" dir="rtl">
         <h2>📦 موجودی دکل‌ها</h2>
         <div style={{ padding: 16, color: "#b00" }}>
           ❌ شما مجاز به مشاهده موجودی دکل‌ها نیستید.
-          <br />
-          این بخش فقط برای واحدهای درون‌چاهی، برون‌چاهی، مانده‌یابی، تعمیرات و
-          نگهداری لوله و مدیر سیستم فعال است.
         </div>
       </div>
     );
   }
 
-  // ───────── جدول اصلی ─────────
+  // ───────── جدول ─────────
   return (
     <div className="rig-stock-page" dir="rtl">
       <h2>📦 موجودی دکل‌ها</h2>
@@ -231,10 +187,38 @@ export default function RigStock() {
         <button className="btn" onClick={clearFilters}>
           حذف فیلتر
         </button>
-        <button className="btn success" onClick={handleExportCSV}>
+        <button
+          className="btn success"
+          onClick={() => {
+            if (!filtered.length) return;
+            const headers = ["دکل", "نام تجهیز", "کد", "سایز", "تعداد"];
+            const rows = filtered.map((r) => ({
+              دکل: r.rig,
+              "نام تجهیز": r.name,
+              کد: r.code,
+              سایز: r.size,
+              تعداد: r.count,
+            }));
+            exportCSV(`RigStock-${Date.now()}.csv`, headers, rows);
+          }}
+        >
           📤 خروجی Excel
         </button>
-        <button className="btn info" onClick={handleExportWord}>
+        <button
+          className="btn info"
+          onClick={() => {
+            if (!filtered.length) return;
+            const headers = ["دکل", "نام تجهیز", "کد", "سایز", "تعداد"];
+            const rows = filtered.map((r) => ({
+              دکل: r.rig,
+              "نام تجهیز": r.name,
+              کد: r.code,
+              سایز: r.size,
+              تعداد: r.count,
+            }));
+            exportDOC(`RigStock-${Date.now()}.doc`, "موجودی دکل‌ها", headers, rows);
+          }}
+        >
           📝 خروجی Word
         </button>
       </div>
