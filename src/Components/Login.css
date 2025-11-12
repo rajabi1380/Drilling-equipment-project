@@ -1,103 +1,132 @@
-/* src/styles/Login.css */
+/* src/Components/Login.css */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700&display=swap');
 
-.login-container {
-  background-color: #ffffff;
-  padding: 2rem;
-  margin: 5vh auto;
-  max-width: 400px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  font-family: "Vazirmatn", sans-serif;
-  direction: rtl;
-  text-align: right;
-  box-sizing: border-box;
+:root{
+  --glass-bg: rgba(255,255,255,0.16);   /* بلور کارت: نگه می‌داریم */
+  --glass-stroke: rgba(255,255,255,0.28);
+  --primary: #2563eb;
 }
 
-.login-container h2 {
-  margin-bottom: 1.8rem;
-  font-size: 1.6rem;
-  color: #222;
-  text-align: center;
-}
+*{ box-sizing: border-box; }
 
-.login-container label {
-  display: block;
-  margin-bottom: 0.4rem;
-  color: #555;
-  font-weight: 500;
-}
-
-.login-container input {
-  width: 100%;
-  padding: 0.7rem;
-  margin-bottom: 1.2rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: border-color 0.3s ease;
-  background-color: #fdfdfd;
-}
-
-.login-container input:focus {
-  border-color: #2196f3;
-  outline: none;
-  background-color: #f9fbff;
-}
-
-.login-container button[type="submit"] {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: #2196f3;
+.login-page{
+  position: relative;
+  min-height: 100vh;
+  font-family: "Vazirmatn", system-ui, sans-serif;
   color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.25s ease;
+  overflow: hidden;
 }
 
-.login-container button[type="submit"]:hover {
-  background-color: #1976d2;
+/* ⛳️ پس‌زمینه‌ی تمام‌صفحه: بدون مات، بدون نوار مشکی
+   cover → کل صفحه را پر می‌کند (درصورت لزوم کمی کراپ می‌شود)
+*/
+.login-page::before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    /* گرادیان خیلی ملایم فقط برای خوانایی متن */
+    linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.14)),
+    url("/public/assets/photo_2025-11-12_17-52-58.jpg") center center / cover no-repeat;
+  z-index:-2;
+  /* هیچ فیلتر بلوری روی پس‌زمینه نداریم */
+  filter: none;
 }
 
-.forgot-password {
-  display: block;
-  text-align: center;
-  margin-top: 1rem;
-  color: #2196f3;
-  font-size: 0.95rem;
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.2s;
+/* لایه بوکه را خیلی کم می‌گذاریم (می‌توانی حذفش کنی) */
+.login-page::after{
+  content:"";
+  position:absolute; inset:-20%;
+  background:
+    radial-gradient(40% 30% at 20% 10%, rgba(255,200,150,.10), transparent 60%),
+    radial-gradient(35% 25% at 80% 0%, rgba(255,120,80,.08), transparent 65%),
+    radial-gradient(45% 40% at 50% 100%, rgba(30,144,255,.08), transparent 60%);
+  filter: blur(22px);
+  z-index:-1;
 }
 
-.forgot-password:hover {
-  color: #1565c0;
+/* نوار بالا */
+.login-nav{
+  position: sticky; top: 0;
+  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.16);
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+.login-nav-inner{
+  max-width: 1100px; margin: 0 auto; padding: 14px 18px;
+  display:flex; align-items:center; gap:14px;
+}
+.login-nav .brand{ font-weight:700; letter-spacing:.2px; }
+.login-nav ul{ list-style:none; display:flex; gap:18px; margin:0 0 0 auto; padding:0; }
+.login-nav li{ color:#e5e7eb; opacity:.95 }
+
+/* کارت شیشه‌ای (بلورش مثل قبل) */
+.login-glass{
+  max-width: 460px;
+  margin: 7vh auto 4vh;
+  padding: 28px 24px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-stroke);
+  border-radius: 18px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 22px 70px rgba(0,0,0,0.45),
+    0 10px 20px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,.12);
+}
+.login-glass h2{
+  margin: 4px 0 16px; font-size:1.4rem; text-align:center; color:#fff;
 }
 
-.error-message {
-  color: #d32f2f;
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
-  text-align: center;
+/* فرم */
+label{ display:block; font-size:.95rem; color:#f3f4f6; margin:10px 6px 6px; }
+.input-wrap{ position:relative; }
+.input-wrap .icon{
+  position:absolute; inset-inline-start:10px; top:50%; transform:translateY(-50%);
+  font-size:1rem; opacity:.8; pointer-events:none;
+}
+input{
+  width:100%; padding:12px 14px; padding-inline-start:36px;
+  border-radius:12px; border:1px solid rgba(255,255,255,0.28);
+  background: rgba(17,24,39,.18); color:#fff; outline:none;
+  transition: border-color .2s, background .2s;
+}
+input::placeholder{ color: rgba(255,255,255,.82); }
+input:focus{ border-color: rgba(255,255,255,.9); background: rgba(17,24,39,.26); }
+
+.btn-primary{
+  width:100%; margin-top:12px; padding:12px 16px;
+  border:none; border-radius:12px; font-weight:700; cursor:pointer;
+  background: linear-gradient(135deg, var(--primary), #60a5fa);
+  color:#fff; transition: transform .05s ease, filter .2s ease;
+}
+.btn-primary:hover{ filter: brightness(1.06); }
+.btn-primary:active{ transform: translateY(1px); }
+
+.form-row{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; gap:12px; }
+.remember{ display:inline-flex; align-items:center; gap:8px; opacity:.95; }
+.link{ color:#bfdbfe; text-decoration:none; } .link:hover{ text-decoration:underline; }
+
+.error{
+  margin:10px 0 0; background:rgba(220,38,38,.18);
+  border:1px solid rgba(239,68,68,.45); color:#fff;
+  padding:8px 10px; border-radius:10px; text-align:center;
 }
 
-/* ریسپانسیو برای موبایل */
-@media (max-width: 480px) {
-  .login-container {
-    margin: 2vh 1rem;
-    padding: 1.5rem;
-    border-radius: 10px;
-  }
+.register{ margin-top:14px; text-align:center; color:#f1f5f9; }
+.register a{ color:#fff; font-weight:700; text-decoration:none; }
+.register a:hover{ text-decoration:underline; }
 
-  .login-container h2 {
-    font-size: 1.4rem;
-  }
+.samples{
+  display:grid; grid-template-columns: repeat(2, minmax(0,1fr));
+  gap:6px 10px; margin-top:14px; font-size:.85rem; color:#e2e8f0;
+}
+.samples span{ grid-column: 1 / -1; opacity:.95; }
+.samples code{ background: rgba(0,0,0,.25); padding:4px 8px; border-radius:8px; }
 
-  .login-container input,
-  .login-container button {
-    font-size: 0.95rem;
-  }
+/* ریسپانسیو */
+@media (max-width: 520px){
+  .login-nav-inner{ padding:12px 14px; }
+  .login-nav ul{ gap:12px; font-size:.92rem; }
+  .login-glass{ margin:6vh 14px 3vh; padding:22px 18px; }
 }
