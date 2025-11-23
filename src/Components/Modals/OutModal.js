@@ -1,37 +1,33 @@
-// File: src/Components/OutModal.jsx
+// File: src/Components/Modals/OutModal.jsx
 
 import React, { useEffect, useMemo, useState } from "react";
 import ModalBase from "../common/ModalBase";
 import ItemPickerModal from "../common/ItemPickerModal";
-import {
-  DatePicker,
-  TimePicker,
-  persian,
-  persian_fa,
-  faFmt,
-} from "../../utils/date";
+import { DatePicker, TimePicker, persian, persian_fa, faFmt } from "../../utils/date";
 import { RIGS } from "../../constants/catalog";
+import { useAuth } from "../Context/AuthContext";
 
-/* -------- helpers -------- */
+// ---------------- helpers ----------------
 function normalizeCatalog(provider) {
   try {
     if (Array.isArray(provider)) return provider;
     if (typeof provider === "function") {
-      let d;
-      try { d = provider(); } catch { d = []; }
+      const d = provider();
       if (Array.isArray(d)) return d;
-      if (d && typeof d === "object") return Object.values(d).flatMap(v => Array.isArray(v) ? v : []);
+      if (d && typeof d === "object") return Object.values(d).flatMap((v) => (Array.isArray(v) ? v : []));
       return [];
     }
     if (provider && typeof provider === "object") {
-      return Object.values(provider).flatMap(v => Array.isArray(v) ? v : []);
+      return Object.values(provider).flatMap((v) => (Array.isArray(v) ? v : []));
     }
     return [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
+
 const norm = (v) => String(v || "").trim();
 
-/* کد خرابی تصادفی */
 const genFaultCode = () => {
   const d = new Date();
   const y = String(d.getFullYear()).slice(2);
@@ -41,16 +37,15 @@ const genFaultCode = () => {
   return `FC-${y}${m}${day}-${rand}`;
 };
 
-/* تشخیص لوله بودن تجهیز */
 const isPipeEquip = (name = "", code = "") => {
   const n = norm(name).toLowerCase();
   const c = norm(code).toLowerCase();
-  return n.includes("لوله") || c.includes("pipe");
+  return n.includes("pipe") || c.includes("pipe");
 };
 
-/* فقط حروف انگلیسی/عدد/ . و - مجاز باشند */
-const sanitizeEngNum = (v) => v.replace(/[^A-Za-z0-9.\- ]/g, "");
+const sanitizeEngNum = (v = "") => v.replace(/[^A-Za-z0-9.\- ]/g, "");
 
+// ---------------- component ----------------
 export default function OutModal({
   open = true,
   onClose,
@@ -58,52 +53,62 @@ export default function OutModal({
   catalogProvider,
   size = "xl",
 }) {
-  /* -------- common fields -------- */
+  // common
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [sizeVal, setSizeVal] = useState("");
   const [count, setCount] = useState(1);
   const [exitDateObj, setExitDateObj] = useState(null);
   const [note, setNote] = useState("");
-  const [status, setStatus] = useState("—");
+  const [status, setStatus] = useState("");
   const [dest, setDest] = useState("");
   const [billNo, setBillNo] = useState("");
   const [unitRequester, setUnitRequester] = useState("");
+  const [contractorName, setContractorName] = useState("");
+  const [contractorManualWO, setContractorManualWO] = useState("");
 
-  /* -------- turning only -------- */
+  // turning
   const [reqType, setReqType] = useState("WO");
   const [faultCode, setFaultCode] = useState("");
-  // علت خرابی: base + suffix → ترکیب می‌شود
-  const [faultBase, setFaultBase] = useState("");     // grade | pin | box
-  const [faultSuffix, setFaultSuffix] = useState(""); // مثل E یا 39
+  const [faultBase, setFaultBase] = useState(""); // grade | pin | box
+  const [faultSuffix, setFaultSuffix] = useState("");
   const [faultReqDate, setFaultReqDate] = useState("");
   const [repairEndDate, setRepairEndDate] = useState("");
 
-  /* طول لوله (فقط برای لوله) */
+  // pipe extras
   const [pipeLength, setPipeLength] = useState("");
+  const [isBandgiri, setIsBandgiri] = useState(false);
 
   const [pickOpen, setPickOpen] = useState(false);
 
+  const { currentUnit } = useAuth();
+  const isPipeUnit = currentUnit === "PIPE";
+
   const catalog = useMemo(() => normalizeCatalog(catalogProvider), [catalogProvider]);
-  const unitOptions = useMemo(() => ["بازرسی", "تراشکاری", ...RIGS], []);
+  const unitOptions = useMemo(() => ["بازرسی", "تراشکاری", "پیمانکاری", ...RIGS], []);
   const destNorm = norm(dest);
   const isTurning = destNorm === "تراشکاری";
   const isInspection = destNorm === "بازرسی";
+  const isContractor = destNorm === "پیمانکاری";
   const isRigDest = RIGS.includes(destNorm);
   const timePlugin = useMemo(() => <TimePicker position="bottom" />, []);
 
-  /* وقتی تراشکاری شد، اگر کد خرابی خالی بود، بساز */
+  // auto fault code for turning
   useEffect(() => {
     if (isTurning && !norm(faultCode)) setFaultCode(genFaultCode());
   }, [isTurning, faultCode]);
 
-  /* اگر suffix تغییر کرد، فقط کاراکتر مجاز بماند */
+  // bandgiri checkbox toggles status
+  useEffect(() => {
+    if (status === "علامت‌گذاری") setIsBandgiri(true);
+  }, [status]);
+
   const onChangeSuffix = (v) => {
     const cleaned = sanitizeEngNum(v).replace(/\s+/g, " ").trimStart();
-    setFaultSuffix(cleaned.slice(0, 16)); // محدودیت طول منطقی
+    setFaultSuffix(cleaned.slice(0, 16));
   };
 
-  /* -------- validation -------- */
+  // validation
   const missing = {
     name: !norm(name),
     code: !norm(code),
@@ -113,30 +118,27 @@ export default function OutModal({
   };
   const hasError = Object.values(missing).some(Boolean);
 
-  /* علت نهایی به شکل "<base> <suffix>" */
-  const finalFaultCause = norm(
-    [faultBase, faultSuffix].filter(Boolean).join(" ")
-  );
+  const finalFaultCause = norm([faultBase, faultSuffix].filter(Boolean).join(" "));
 
-  /* -------- submit -------- */
   const submit = () => {
     if (hasError) {
-      alert("لطفاً فیلدهای الزامی را تکمیل کنید.");
+      alert("فیلدهای اجباری را کامل کنید.");
       return;
     }
     if (isRigDest && !norm(billNo)) {
-      alert("شماره بارنامه برای ارسال به دکل الزامی است.");
+      alert("شماره بارنامه برای مقصد دکل الزامی است.");
+      return;
+    }
+    if (isContractor && (!norm(contractorName) || !norm(contractorManualWO))) {
+      alert("نام پیمانکار و شماره دستور کار دستی پیمانکاری الزامی است.");
       return;
     }
     if (isInspection && !norm(unitRequester)) {
-      alert("نام واحد درخواست‌کننده الزامی است.");
+      alert("نام واحد درخواست‌کننده برای مقصد بازرسی الزامی است.");
       return;
     }
-    if (
-      isTurning &&
-      (!norm(reqType) || !norm(faultReqDate) || !finalFaultCause)
-    ) {
-      alert("برای تراشکاری، علت خرابی (base + suffix)، نوع درخواست و تاریخ شروع الزامی است.");
+    if (isTurning && (!norm(reqType) || !norm(faultReqDate) || !finalFaultCause)) {
+      alert("برای تراشکاری نوع درخواست، تاریخ شروع و علت عیب (base + suffix) لازم است.");
       return;
     }
 
@@ -148,21 +150,22 @@ export default function OutModal({
       size: norm(sizeVal),
       count: Number(count) || 1,
       exitDateObj: exitDateObj || null,
-      status: norm(status) || "—",
+      status: norm(status) || "",
       dest: destNorm,
       note: norm(note),
       billNo: norm(billNo),
       unitRequester: norm(unitRequester),
+      contractorName: norm(contractorName),
+      contractorManualWO: norm(contractorManualWO),
 
-      // turning
       reqType: norm(reqType) || "WO",
       faultCode: finalFaultCode,
-      faultCause: finalFaultCause, // ← اینجا مقدار ترکیبی می‌رود مثل "pin 39"
+      faultCause: finalFaultCause,
       faultReqDate: norm(faultReqDate),
       repairEndDate: norm(repairEndDate),
 
-      // pipe
       pipeLength: isPipeEquip(name, code) ? norm(pipeLength) : "",
+      isBandgiri: isPipeUnit ? isBandgiri : false,
     });
   };
 
@@ -172,14 +175,14 @@ export default function OutModal({
   const suffixPlaceholder =
     faultBase === "grade" ? "مثلاً E" :
     faultBase === "pin"   ? "مثلاً 39" :
-    faultBase === "box"   ? "مثلاً NC38" : "پسوند (E / 39 / …)";
+    faultBase === "box"   ? "مثلاً NC38" : "پایان (E / 39 / ...)";
 
   return (
     <>
       <ModalBase
         open={open}
         onClose={onClose}
-        title="📤 ثبت خروج تجهیز"
+        title="🚚 خروج تجهیز"
         size={size}
         style={{ maxWidth: 1200 }}
         footer={
@@ -190,34 +193,12 @@ export default function OutModal({
         }
       >
         <div className="mb-form">
-          {/* نام / کد / سایز / تعداد / نوع درخواست / انتخاب */}
+          {/* نام / کد / سایز / تعداد / نوع درخواست تراشکاری / انتخاب از کاتالوگ */}
           <div className="row" style={{ gridTemplateColumns: "1fr 1fr 1fr 0.6fr 0.7fr auto" }}>
-            <input
-              className={`input ${missing.name ? "err" : ""}`}
-              placeholder="* نام تجهیز"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <input
-              className={`input ${missing.code ? "err" : ""}`}
-              placeholder="* کد تجهیز"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <input
-              className={`input ${missing.size ? "err" : ""}`}
-              placeholder="* سایز"
-              value={sizeVal}
-              onChange={(e) => setSizeVal(e.target.value)}
-            />
-            <input
-              type="number"
-              min={1}
-              className={`input ${missing.count ? "err" : ""}`}
-              placeholder="* تعداد"
-              value={count}
-              onChange={(e) => setCount(Math.max(1, Number(e.target.value) || 1))}
-            />
+            <input className={`input ${missing.name ? "err" : ""}`} placeholder="* نام تجهیز" value={name} onChange={(e) => setName(e.target.value)} />
+            <input className={`input ${missing.code ? "err" : ""}`} placeholder="* کد تجهیز" value={code} onChange={(e) => setCode(e.target.value)} />
+            <input className={`input ${missing.size ? "err" : ""}`} placeholder="* سایز" value={sizeVal} onChange={(e) => setSizeVal(e.target.value)} />
+            <input type="number" min={1} className={`input ${missing.count ? "err" : ""}`} placeholder="* تعداد" value={count} onChange={(e) => setCount(Math.max(1, Number(e.target.value) || 1))} />
 
             {isTurning ? (
               <select className="input" value={reqType} onChange={(e) => setReqType(e.target.value)}>
@@ -225,26 +206,42 @@ export default function OutModal({
                 <option value="PM">PM</option>
                 <option value="EM">EM</option>
               </select>
-            ) : (
-              <div />
-            )}
+            ) : <div />}
 
             <div className="col" style={{ alignItems: "flex-end" }}>
               <button type="button" className="pick-btn" onClick={() => setPickOpen(true)}>انتخاب</button>
             </div>
           </div>
 
-          {/* طول لوله */}
+          {/* طول لوله برای PIPE */}
           {pipeActive && (
             <div className="row">
-              <input
-                type="number"
-                min={0}
-                className="input"
-                placeholder="طول لوله (متر)"
-                value={pipeLength}
-                onChange={(e) => setPipeLength(e.target.value)}
-              />
+              <input type="number" min={0} className="input" placeholder="طول لوله (متر)" value={pipeLength} onChange={(e) => setPipeLength(e.target.value)} />
+            </div>
+          )}
+
+          {/* بندگیری برای واحد PIPE */}
+          {isPipeUnit && (
+            <div className="row">
+              <label style={{
+                display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+                padding: "8px 12px", borderRadius: 8, border: "1px solid #e5e7eb",
+                background: isBandgiri ? "#eff6ff" : "#fff",
+              }}>
+                <input
+                  type="checkbox"
+                  checked={isBandgiri}
+                  onChange={(e) => {
+                    setIsBandgiri(e.target.checked);
+                    if (e.target.checked) setStatus("علامت‌گذاری");
+                    else if (status === "علامت‌گذاری") setStatus("");
+                  }}
+                  style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#3b82f6" }}
+                />
+                <span style={{ fontSize: 14, fontWeight: 600, color: isBandgiri ? "#1e40af" : "#475569" }}>
+                  بندگیری
+                </span>
+              </label>
             </div>
           )}
 
@@ -259,88 +256,58 @@ export default function OutModal({
               plugins={[timePlugin]}
               inputClass="input"
               containerClassName="rmdp-rtl"
-              placeholder="تاریخ و ساعت خروج"
+              placeholder="تاریخ و زمان خروج"
             />
             <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="—">وضعیت</option>
+              <option value="">وضعیت</option>
               <option value="بازرسی شده">بازرسی شده</option>
               <option value="تعمیر شده">تعمیر شده</option>
-              <option value="بندگیری شده">بندگیری شده</option>
-              <option value="سالم">سالم</option>
+              <option value="علامت‌گذاری">علامت‌گذاری</option>
+              <option value="معیوب">معیوب</option>
             </select>
-            <select
-              className={`input ${missing.dest ? "err" : ""}`}
-              value={dest}
-              onChange={(e) => setDest(e.target.value)}
-            >
+            <select className={`input ${missing.dest ? "err" : ""}`} value={dest} onChange={(e) => setDest(e.target.value)}>
               <option value="">مقصد...</option>
-              {unitOptions.map((u) => (
-                <option key={u} value={u}>{u}</option>
-              ))}
+              {unitOptions.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
           </div>
 
           {isRigDest && (
             <div className="row">
-              <input
-                className="input"
-                placeholder="شماره بارنامه *"
-                value={billNo}
-                onChange={(e) => setBillNo(e.target.value)}
-              />
+              <input className="input" placeholder="شماره بارنامه *" value={billNo} onChange={(e) => setBillNo(e.target.value)} />
+            </div>
+          )}
+
+          {isContractor && (
+            <div className="row">
+              <input className="input" placeholder="نام پیمانکار *" value={contractorName} onChange={(e) => setContractorName(e.target.value)} />
+              <input className="input" placeholder="شماره دستور کار (دستی) *" value={contractorManualWO} onChange={(e) => setContractorManualWO(e.target.value)} />
             </div>
           )}
 
           {isInspection && (
             <div className="row">
-              <input
-                className="input"
-                placeholder="نام واحد درخواست‌کننده *"
-                value={unitRequester}
-                onChange={(e) => setUnitRequester(e.target.value)}
-              />
+              <input className="input" placeholder="نام واحد درخواست‌کننده *" value={unitRequester} onChange={(e) => setUnitRequester(e.target.value)} />
             </div>
           )}
 
-          {/* تراشکاری: علت خرابی base + suffix، کد خرابی رندوم */}
+          {/* تراشکاری: base + suffix و تاریخ‌ها */}
           {isTurning && (
             <>
               <div className="row" style={{ gridTemplateColumns: "0.9fr 1.1fr 1fr" }}>
-                <select
-                  className="input"
-                  value={faultBase}
-                  onChange={(e) => setFaultBase(e.target.value)}
-                >
-                  <option value="">— پایه علت (grade/pin/box) —</option>
+                <select className="input" value={faultBase} onChange={(e) => setFaultBase(e.target.value)}>
+                  <option value="">پایان (grade/pin/box)</option>
                   <option value="grade">grade</option>
                   <option value="pin">pin</option>
                   <option value="box">box</option>
                 </select>
-
-                <input
-                  className="input"
-                  placeholder={suffixPlaceholder}
-                  value={faultSuffix}
-                  onChange={(e) => onChangeSuffix(e.target.value)}
-                />
-
-                {/* <input
-                  className="input"
-                  placeholder="کد خرابی (خودکار)"
-                  value={faultCode}
-                  onChange={(e) => setFaultCode(sanitizeEngNum(e.target.value).toUpperCase().slice(0, 18))}
-                /> */}
+                <input className="input" placeholder={suffixPlaceholder} value={faultSuffix} onChange={(e) => onChangeSuffix(e.target.value)} />
+                {/* Optional faultCode input, currently hidden */}
               </div>
 
-              {/* تاریخ‌ها */}
               <div className="row">
                 <DatePicker
                   value={faultReqDate ? new Date(faultReqDate) : null}
-                  onChange={(d) =>
-                    setFaultReqDate(
-                      d && d.toDate ? new Date(d.toDate()).toISOString().slice(0, 10) : ""
-                    )
-                  }
+                  onChange={(d) => setFaultReqDate(d && d.toDate ? new Date(d.toDate()).toISOString().slice(0, 10) : "")}
                   calendar={persian}
                   locale={persian_fa}
                   format="YYYY/MM/DD"
@@ -348,38 +315,27 @@ export default function OutModal({
                   containerClassName="rmdp-rtl"
                   placeholder="تاریخ شروع/درخواست *"
                 />
-
                 <DatePicker
                   value={repairEndDate ? new Date(repairEndDate) : null}
-                  onChange={(d) =>
-                    setRepairEndDate(
-                      d && d.toDate ? new Date(d.toDate()).toISOString().slice(0, 10) : ""
-                    )
-                  }
+                  onChange={(d) => setRepairEndDate(d && d.toDate ? new Date(d.toDate()).toISOString().slice(0, 10) : "")}
                   calendar={persian}
                   locale={persian_fa}
                   format="YYYY/MM/DD"
                   inputClass="input"
                   containerClassName="rmdp-rtl"
-                  placeholder="تاریخ پایان عملیات"
+                  placeholder="تاریخ پایان تعمیر"
                 />
               </div>
 
-              {/* پیش‌نمایش علت ترکیبی (اختیاری) */}
               <div className="row">
-                <input disabled className="input" value={finalFaultCause} placeholder="پیش‌نمایش علت خرابی (مثلاً: grade E)" />
+                <input disabled className="input" value={finalFaultCause} placeholder="علت عیب (base + suffix)" />
               </div>
             </>
           )}
 
           {/* توضیحات */}
           <div className="row">
-            <textarea
-              className="input"
-              placeholder="توضیحات…"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
+            <textarea className="input" placeholder="توضیحات..." value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
         </div>
       </ModalBase>

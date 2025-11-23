@@ -8,7 +8,7 @@
   z-index: 999;
 }
 
-/* سایدبار: ثابت سمت راست — پیش‌فرض بسته */
+/* سایدبار */
 .sidebar {
   position: fixed;
   top: 0;
@@ -30,7 +30,7 @@
   transform: translateX(0);
 }
 
-/* هدر سایدبار */
+/* هدر */
 .sb-header {
   display: flex;
   align-items: center;
@@ -46,52 +46,58 @@
   cursor: pointer;
 }
 
-/* لیست منو */
+/* منوی اصلی */
 .sb-menu {
   overflow: auto;
   padding-inline: 2px;
   display: flex;
   flex-direction: column;
-  gap: 14px; /* فاصله بیشتر بین گروه‌ها */
+  gap: 14px;
 }
 
-/* آیتم‌های سطح اول */
-.sb-item,
-a.sb-item {
+/* والد منوی دارای زیرمنو */
+.sb-parent {
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px;
+  padding: 12px;
+  background: #fff;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
-  color: var(--text);
-  text-align: right;
   cursor: pointer;
-  text-decoration: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-weight: 500;
   transition: background 0.2s ease;
-  margin-bottom: 4px;
 }
-.sb-item:hover,
-a.sb-item:hover {
+.sb-parent:hover {
   background: var(--muted);
 }
-.chev {
-  color: var(--sub);
+.sb-parent.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* فلش */
+.chevron {
+  transition: transform 0.25s ease;
+}
+.chevron.rot {
+  transform: rotate(180deg);
 }
 
 /* زیرمنو */
-.sb-sub {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 2px 8px 8px;
+.sb-children {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.28s ease;
   margin-top: 6px;
+  padding-right: 4px;
+}
+.sb-children.open {
+  max-height: 250px;
 }
 
-/* لینک‌های زیرمنو (NavLink) */
+/* آیتم زیرمنو */
 .sb-subitem {
   display: block;
   width: 100%;
@@ -103,20 +109,17 @@ a.sb-item:hover {
   border-radius: 8px;
   background: #fff;
   color: inherit;
-  text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
+  text-decoration: none;
   margin-bottom: 6px;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
+
 .sb-subitem:hover {
   background: var(--muted);
   border-color: #dfe3e8;
 }
-.sb-subitem:focus-visible {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
-}
+
 .sb-subitem.is-active {
   background: var(--muted);
   border-color: var(--accent);
@@ -127,7 +130,6 @@ a.sb-item:hover {
 .sb-subitem.disabled {
   color: #aaa;
   cursor: not-allowed;
-  pointer-events: all;
   opacity: 0.6;
 }
 .sb-subitem.disabled:hover {
@@ -142,7 +144,7 @@ a.sb-item:hover {
   font-size: 13px;
 }
 
-/* ورودی‌ها راست‌به‌چپ (در صورت نیاز) */
+/* ورودی‌ها راست‌به‌چپ */
 [dir="rtl"] .sidebar input {
   direction: rtl;
 }
@@ -154,7 +156,7 @@ a.sb-item:hover {
   }
 }
 
-/* کاهش موشن برای کاربران خاص */
+/* کاهش موشن */
 @media (prefers-reduced-motion: reduce) {
   .sidebar {
     transition: none;

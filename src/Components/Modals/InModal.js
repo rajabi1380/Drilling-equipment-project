@@ -148,3 +148,4 @@ export default function InModal({ open = true, onClose, onSubmit, catalogProvide
     </>
   );
 }
+

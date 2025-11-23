@@ -3,16 +3,39 @@
 // ============================
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import "./Inout.css";
+
+// Utils
 import { loadLS, saveLS } from "../utils/ls";
 import { toISO16 } from "../utils/date";
-import { getCatalogForUnit, RIGS } from "../constants/catalog";
 import { exportCSV, exportDOC } from "../utils/export";
 import { keyOf, splitKey } from "../utils/Key";
-import { isRig, addToRigInventory, removeFromRigInventory, loadRigInv, saveRigInv } from "../utils/rigInventory";
-import { loadTurning, appendTurningOpen, FINISH_STATES, LS_TURN } from "../utils/Turning";
+
+// Rig + Catalog
+import { getCatalogForUnit, RIGS } from "../constants/catalog";
+import {
+  isRig,
+  addToRigInventory,
+  removeFromRigInventory,
+  loadRigInv,
+  saveRigInv,
+} from "../utils/rigInventory";
+
+// Turning + WO
+import {
+  loadTurning,
+  loadInspection,
+  appendTurningOpen,
+  appendInspectionOpen,
+  FINISH_STATES,
+  LS_TURN,
+  LS_INSPECTION,
+} from "../utils/turning";
+
+// UI
 import InModal from "./Modals/InModal";
 import OutModal from "./Modals/OutModal";
 import RigModal from "./Modals/RigModal";
+import RequestPanel from "./Request";
 import { useAuth } from "./Context/AuthContext";
 import { useNotify } from "../utils/notify";
 
@@ -43,9 +66,9 @@ const pingRigRefresh = () => {
   }
 };
 
-// موجودی تجمیعی از لاگ I/O (با پشتیبانی qty)
+// Build stock buckets from IO logs
 const buildStockBuckets = (ioRows) => {
-  const sorted = [...ioRows].sort((a, b) => {   // ✅ اینجا قبلاً .[ بود
+  const sorted = [...ioRows].sort((a, b) => {
     const ta = a.enterAtISO || a.exitAtISO || "";
     const tb = b.enterAtISO || b.exitAtISO || "";
     return ta.localeCompare(tb);
@@ -88,6 +111,7 @@ const buildStockBuckets = (ioRows) => {
   return Array.from(map.entries()).map(([k, v]) => ({ ...v, ...splitKey(k) }));
 };
 
+// Reports
 const appendReportRows = (newRows = []) => {
   if (!newRows || !newRows.length) return;
   const boot = loadLS(LS_REPORT, { rows: [] });
@@ -97,8 +121,19 @@ const appendReportRows = (newRows = []) => {
 };
 
 const makeEquipmentReportRow = ({
-  id, name, code, size, type, datetimeISO, sourceUnit = "", destUnit = "", condition = "", bandgiri = "", note = "",
-  recordedAtISO = "", reportUnit = "",
+  id,
+  name,
+  code,
+  size,
+  type,
+  datetimeISO,
+  sourceUnit = "",
+  destUnit = "",
+  condition = "",
+  bandgiri = "",
+  note = "",
+  recordedAtISO = "",
+  reportUnit = "",
 }) => ({
   Report_Id: id,
   Equipment_Code: code,
@@ -137,13 +172,17 @@ export default function InOut() {
   const unitFallback = currentUnit || "PIPE";
 
   const canInOut =
-    isSuper || hasUnit("DOWNHOLE") || hasUnit("UPHOLE") || hasUnit("PIPE") || hasUnit("MANDEYABI");
+    isSuper ||
+    hasUnit("DOWNHOLE") ||
+    hasUnit("UPHOLE") ||
+    hasUnit("PIPE") ||
+    hasUnit("MANDEYABI");
 
-  // داده‌ها
-  const [ioRows, setIoRows] = useState(() => (loadLS(LS_INV, { ioRows: [] }).ioRows || []));
-  const [openWOs, setOpenWOs] = useState(() => (loadLS(LS_WO, { open: [], closed: [] }).open || []));
-  const [closedWOs, setClosedWOs] = useState(() => (loadLS(LS_WO, { open: [], closed: [] }).closed || []));
-  const [rigMoves, setRigMoves] = useState(() => (loadLS(LS_RM, { moves: [] }).moves || []));
+  // Data
+  const [ioRows, setIoRows] = useState(() => loadLS(LS_INV, { ioRows: [] }).ioRows || []);
+  const [openWOs, setOpenWOs] = useState(() => loadLS(LS_WO, { open: [], closed: [] }).open || []);
+  const [closedWOs, setClosedWOs] = useState(() => loadLS(LS_WO, { open: [], closed: [] }).closed || []);
+  const [rigMoves, setRigMoves] = useState(() => loadLS(LS_RM, { moves: [] }).moves || []);
 
   // UI
   const [showModal, setShowModal] = useState(null); // "in" | "out" | "rig"
@@ -164,7 +203,7 @@ export default function InOut() {
   useEffect(() => { saveLS(LS_WO, { open: openWOs, closed: closedWOs }); }, [openWOs, closedWOs]);
   useEffect(() => { saveLS(LS_RM, { moves: rigMoves }); }, [rigMoves]);
 
-  // اسکوپ براساس واحد کاربر
+  // Scoped by unit
   const scopedIoRows = useMemo(() => {
     if (isSuper || !currentUnit) return ioRows;
     return ioRows.filter((r) => (r.unit || "PIPE") === currentUnit);
@@ -172,24 +211,22 @@ export default function InOut() {
 
   const scopedOpenWOs = useMemo(() => {
     if (isSuper || !currentUnit) return openWOs;
-    return openWOs.filter((r) => (r.unit || r.destUnit || "PIPE") === currentUnit);
+    // درخواست‌های بازرسی برای همه دیده شود
+    return openWOs.filter((r) => (r.unit || r.destUnit || "PIPE") === currentUnit || r.destUnit === "بازرسی");
   }, [openWOs, isSuper, currentUnit]);
 
   const scopedClosedWOs = useMemo(() => {
     if (isSuper || !currentUnit) return closedWOs;
-    return closedWOs.filter((r) => (r.unit || r.destUnit || "PIPE") === currentUnit);
+    return closedWOs.filter((r) => (r.unit || r.destUnit || "PIPE") === currentUnit || r.destUnit === "بازرسی");
   }, [closedWOs, isSuper, currentUnit]);
 
-  // موجودی
+  // Stock buckets
   const items = useMemo(() => buildStockBuckets(scopedIoRows), [scopedIoRows]);
-  const totals = useMemo(
-    () => ({
-      total: items.reduce((s, x) => s + x.total, 0),
-      inspected: items.reduce((s, x) => s + x.inspected, 0),
-      repaired: items.reduce((s, x) => s + x.repaired, 0),
-    }),
-    [items]
-  );
+  const totals = useMemo(() => ({
+    total: items.reduce((s, x) => s + x.total, 0),
+    inspected: items.reduce((s, x) => s + x.inspected, 0),
+    repaired: items.reduce((s, x) => s + x.repaired, 0),
+  }), [items]);
 
   const filteredItems = useMemo(() => {
     if (stockFilter === "inspected") return items.filter((x) => x.inspected > 0);
@@ -199,15 +236,13 @@ export default function InOut() {
 
   const currentStockOf = useCallback(
     (name, code, size) => {
-      const rec = items.find(
-        (x) => x.name === norm(name) && x.code === norm(code) && x.size === norm(size)
-      );
+      const rec = items.find((x) => x.name === norm(name) && x.code === norm(code) && x.size === norm(size));
       return rec ? rec.total : 0;
     },
     [items]
   );
 
-  // هشدار کمبود
+  // Low stock alert
   useEffect(() => { checkLowStock(items, MIN_THRESHOLD); }, [items, checkLowStock]);
 
   /* ---------- IN ---------- */
@@ -226,7 +261,6 @@ export default function InOut() {
 
     setIoRows((prev) => [row, ...prev]);
 
-    // تشخیص مبدا دکل
     const possibleRig = p.fromWhere || p.rig || p.rigName || p.sourceUnit || "";
     if (isRig(possibleRig)) {
       removeFromRigInventory(possibleRig, p.name, p.code, p.size, qty);
@@ -244,7 +278,7 @@ export default function InOut() {
     show("✅ تجهیز با موفقیت وارد شد", "success");
   }, [isSuper, unitFallback, show]);
 
-  /* ---------- ساخت WO از خروج به تراشکاری ---------- */
+  /* ---------- ساخت WO از خروج ---------- */
   const createWOFromOut = useCallback((payload, unit) => {
     const type = (payload.reqType || "WO").toUpperCase();
     const woNumber = makeWONumber(type);
@@ -275,6 +309,38 @@ export default function InOut() {
     setOpenPage(1);
   }, [show]);
 
+  const createInspectionWOFromOut = useCallback((payload, unit) => {
+    const type = (payload.reqType || "WO").toUpperCase();
+    const woNumber = makeWONumber(type);
+    const wo = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      woNumber, type, unit,
+      name: norm(payload.name), code: norm(payload.code), size: norm(payload.size),
+      destUnit: "بازرسی",
+      startDate: payload.exitDateObj ? new Date(payload.exitDateObj).toISOString().slice(0, 10) : "",
+      endDate: payload.repairEndDate || "",
+      desc: payload.note || "",
+      statusSnapshot: norm(payload.status || "—"),
+      createdAt: new Date().toISOString(),
+    };
+    setOpenWOs((s) => [wo, ...s]);
+
+    appendInspectionOpen({
+      name: payload.name,
+      code: payload.code,
+      size: payload.size,
+      reqType: type,
+      desc: payload.note || "",
+      startISO: toISO16(payload.exitDateObj),
+      endISO: payload.repairEndDate || "",
+    });
+
+    show(`📝 درخواست (${wo.woNumber}) ثبت شد و به واحد بازرسی ارسال گردید`, "success");
+    setReqUnitFilter(null); // نمایش برای همه
+    setPanel("requests");
+    setOpenPage(1);
+  }, [show]);
+
   /* ---------- OUT ---------- */
   const addOut = useCallback((p) => {
     const unit = isSuper ? (p.unit || unitFallback) : unitFallback;
@@ -289,11 +355,22 @@ export default function InOut() {
     const exitISO = toISO16(p.exitDateObj) || new Date().toISOString().slice(0, 16);
     const id = Date.now();
     const destNorm = norm(p.dest || "");
+    const billNo = norm(p.billNo || "");
+    const contractorName = norm(p.contractorName || "");
+    const contractorManualWO = norm(p.contractorManualWO || "");
+
+    const noteCombined = [
+      p.note || "",
+      billNo ? `بارنامه: ${billNo}` : "",
+      destNorm === "پیمانکاری" && contractorName ? `پیمانکار: ${contractorName}` : "",
+      destNorm === "پیمانکاری" && contractorManualWO ? `دستور کار: ${contractorManualWO}` : "",
+    ].filter(Boolean).join(" | ");
 
     const row = {
       id, type: "out", unit,
       name: norm(p.name), code: norm(p.code), size: norm(p.size),
-      status: norm(p.status || ""), dest: destNorm, exitAtISO: exitISO, note: p.note || "", qty,
+      status: norm(p.status || ""), dest: destNorm, exitAtISO: exitISO, note: noteCombined, qty,
+      billNo, contractorName, contractorManualWO,
     };
 
     setIoRows((prev) => [row, ...prev]);
@@ -307,13 +384,14 @@ export default function InOut() {
       makeEquipmentReportRow({
         id, name: row.name, code: row.code, size: row.size, type: "خروج",
         datetimeISO: exitISO, sourceUnit: unit, destUnit: destNorm,
-        condition: row.status, bandgiri: norm(p.isBandgiri || ""), note: row.note,
+        condition: row.status, bandgiri: norm(p.isBandgiri || ""), note: noteCombined,
         recordedAtISO: exitISO, reportUnit: unit,
       }),
     ]);
 
     show("📤 خروج تجهیز ثبت شد", "info");
     if (destNorm === "تراشکاری") createWOFromOut(p, unit);
+    if (destNorm === "بازرسی") createInspectionWOFromOut(p, unit);
   }, [isSuper, unitFallback, currentStockOf, show, createWOFromOut]);
 
   /* ---------- RIG ↔ RIG ---------- */
@@ -429,11 +507,103 @@ export default function InOut() {
     });
   }, []);
 
+  /* ---------- همگام‌سازی بازرسی/WO ---------- */
+  const syncInspectionToWOs = useCallback(() => {
+    const insp = loadInspection();
+
+    const finishedByOrderNo = new Set();
+    const finishedSnapshots = new Map();
+    const collect = (arr = []) =>
+      arr.forEach((r) => {
+        const st = String(r.status || "").trim().toLowerCase();
+        if (FINISH_STATES.has(st)) {
+          if (r.orderNo) finishedByOrderNo.add(r.orderNo);
+          if (r.orderNo) finishedSnapshots.set(r.orderNo, r);
+        }
+      });
+    collect(Array.isArray(insp.archived) ? insp.archived : []);
+    collect(Array.isArray(insp.open) ? insp.open : []);
+
+    const finishedByNCS = new Map();
+    const addNCS = (arr = []) =>
+      arr.forEach((r) => {
+        const st = String(r.status || "").trim().toLowerCase();
+        if (FINISH_STATES.has(st)) finishedByNCS.set(keyOf(r.name, r.code, r.size), r);
+      });
+    addNCS(Array.isArray(insp.archived) ? insp.archived : []);
+    addNCS(Array.isArray(insp.open) ? insp.open : []);
+
+    if (!finishedByOrderNo.size && !finishedByNCS.size) return;
+
+    setOpenWOs((prevOpen) => {
+      const stillOpen = [];
+      const toArchive = [];
+
+      for (const wo of prevOpen) {
+        const isInspectionWO = (wo.destUnit || "") === "بازرسی";
+        if (!isInspectionWO) {
+          stillOpen.push(wo);
+          continue;
+        }
+
+        const byOrder = wo.woNumber && finishedByOrderNo.has(wo.woNumber);
+        const byNCS = finishedByNCS.get(keyOf(wo.name, wo.code, wo.size));
+        if (byOrder || byNCS) {
+          const inspRec = byOrder ? finishedSnapshots.get(wo.woNumber) : byNCS;
+          const merged = {
+            ...wo,
+            endDate: inspRec?.endISO || wo.endDate || "",
+            statusSnapshot: inspRec?.status
+              ? `پایان‌یافته (بازرسی: ${inspRec.status})`
+              : "پایان‌یافته (بازرسی)",
+            desc: wo.desc || inspRec?.desc || "",
+            inspectionSnapshot: {
+              orderNo: inspRec?.orderNo || "",
+              status: inspRec?.status || "",
+              startISO: inspRec?.startISO || "",
+              endISO: inspRec?.endISO || "",
+              name: inspRec?.name || "",
+              code: inspRec?.code || "",
+              size: inspRec?.size || "",
+              desc: inspRec?.desc || "",
+            },
+          };
+          toArchive.push(merged);
+        } else {
+          stillOpen.push(wo);
+        }
+      }
+
+      if (toArchive.length) {
+        setClosedWOs((prevClosed) => {
+          const seen = new Set(prevClosed.map((x) => x.woNumber));
+          const nowISO = new Date().toISOString();
+          return [
+            ...prevClosed,
+            ...toArchive.filter((x) => !seen.has(x.woNumber)).map((x) => ({ ...x, closedAt: nowISO })),
+          ];
+        });
+      }
+
+      return stillOpen;
+    });
+  }, []);
+
   useEffect(() => {
     syncTurningToWOs();
-    const intId = window.setInterval(syncTurningToWOs, 2000);
-    const onStorage = (e) => { if (e.key === LS_TURN) syncTurningToWOs(); };
-    const onFocus = () => syncTurningToWOs();
+    syncInspectionToWOs();
+    const intId = window.setInterval(() => {
+      syncTurningToWOs();
+      syncInspectionToWOs();
+    }, 2000);
+    const onStorage = (e) => {
+      if (e.key === LS_TURN) syncTurningToWOs();
+      if (e.key === LS_INSPECTION) syncInspectionToWOs();
+    };
+    const onFocus = () => {
+      syncTurningToWOs();
+      syncInspectionToWOs();
+    };
     window.addEventListener("storage", onStorage);
     window.addEventListener("focus", onFocus);
     return () => {
@@ -441,9 +611,9 @@ export default function InOut() {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", onFocus);
     };
-  }, [syncTurningToWOs]);
+  }, [syncTurningToWOs, syncInspectionToWOs]);
 
-  // فیلترهای Requests
+  // Request filters
   const filterWO = useCallback(
     (arr) =>
       arr.filter((r) => {
@@ -463,36 +633,10 @@ export default function InOut() {
 
   const openFilteredAll = useMemo(() => filterWO(scopedOpenWOs), [scopedOpenWOs, filterWO]);
   const closedFilteredAll = useMemo(() => filterWO(scopedClosedWOs), [scopedClosedWOs, filterWO]);
-
   useEffect(() => { setOpenPage(1); setClosedPage(1); }, [panel, reqUnitFilter, reqFiltersApplied]);
-
-  useEffect(() => {
-    if (panel === "requests" && reqListRef.current) {
-      const t = window.setTimeout(() => {
-        reqListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 50);
-      return () => window.clearTimeout(t);
-    }
-    return undefined;
-  }, [panel]);
 
   const openPaged = useMemo(() => paginate(openFilteredAll, openPage, PAGE_SIZE), [openFilteredAll, openPage]);
   const closedPaged = useMemo(() => paginate(closedFilteredAll, closedPage, PAGE_SIZE), [closedFilteredAll, closedPage]);
-
-  const Pager = ({ page, pages, onPrev, onNext, onGo }) => (
-    <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "flex-end", padding: "8px 0" }}>
-      <button type="button" className="btn" onClick={onPrev} disabled={page <= 1}>‹ قبلی</button>
-      {Array.from({ length: pages }).map((_, i) => {
-        const p = i + 1;
-        return (
-          <button key={p} type="button" className={`btn ${p === page ? "primary" : ""}`} onClick={() => onGo(p)}>
-            {p}
-          </button>
-        );
-      })}
-      <button type="button" className="btn" onClick={onNext} disabled={page >= pages}>بعدی ›</button>
-    </div>
-  );
 
   const isStock = panel === "stock";
   const isReq = panel === "requests";
@@ -569,7 +713,7 @@ export default function InOut() {
             >
               🧰 تعمیر شده ({totals.repaired})
             </button>
-            <button type="button" className={`btn ${isReq ? "primary" : ""}`} onClick={() => setPanel("requests")}>
+            <button type="button" className={`btn ${isReq ? "primary" : ""}`} onClick={() => { setPanel("requests"); setTimeout(() => reqListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}>
               📋 نمایش درخواست‌ها
             </button>
           </div>
@@ -608,154 +752,28 @@ export default function InOut() {
 
         {/* Requests panel */}
         {isReq && (
-          <div className="lathe-list" ref={reqListRef}>
-            {reqUnitFilter && <div className="notify info" style={{ marginBottom: 8 }}>فیلتر واحد مقصد: {reqUnitFilter}</div>}
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, minmax(0,1fr)) auto auto",
-                gap: 8,
-                alignItems: "center",
-                margin: "6px 0 10px",
-              }}
-            >
-              <input className="input" placeholder="نام تجهیز" value={reqFilters.name}
-                onChange={(e) => setReqFilters((f) => ({ ...f, name: e.target.value }))} />
-              <input className="input" placeholder="کد تجهیز" value={reqFilters.code}
-                onChange={(e) => setReqFilters((f) => ({ ...f, code: e.target.value }))} />
-              <input className="input" placeholder="واحد مقصد" value={reqFilters.destUnit}
-                onChange={(e) => setReqFilters((f) => ({ ...f, destUnit: e.target.value }))} />
-              <input className="input" placeholder="شماره دستور کار" value={reqFilters.wo}
-                onChange={(e) => setReqFilters((f) => ({ ...f, wo: e.target.value }))} />
-              <div />
-              <button type="button" className="btn" onClick={() => setReqFiltersApplied(reqFilters)}>اعمال فیلتر</button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  const empty = { name: "", code: "", destUnit: "", wo: "" };
-                  setReqFilters(empty);
-                  setReqFiltersApplied(empty);
-                  setReqUnitFilter(null);
-                }}
-              >
-                حذف فیلتر
-              </button>
-            </div>
-
-            <h4>📝 درخواست‌های باز ({openFilteredAll.length})</h4>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>شماره دستور کار</th><th>نام تجهیز</th><th>کد</th><th>سایز</th>
-                    <th>واحد مقصد</th><th>نوع درخواست</th><th>وضعیت</th>
-                    <th>تاریخ شروع</th><th>تاریخ پایان</th><th>توضیحات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {openPaged.slice.length ? (
-                    openPaged.slice.map((r) => (
-                      <tr key={r.id}>
-                        <td className="mono">{r.woNumber}</td>
-                        <td>{r.name}</td>
-                        <td>{r.code}</td>
-                        <td>{r.size}</td>
-                        <td>{r.destUnit}</td>
-                        <td>{r.type}</td>
-                        <td>{r.statusSnapshot || "—"}</td>
-                        <td>{r.startDate || "—"}</td>
-                        <td>{r.endDate || "—"}</td>
-                        <td title={r.desc}>{r.desc || "—"}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan={10} className="empty">درخواستی نیست</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => exportCSV(`درخواست‌های-باز-${ymd()}.csv`, openHeaders, openRows)}
-              >
-                خروجی Excel (CSV)
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => exportDOC(`درخواست‌های-باز-${ymd()}.doc`, "درخواست‌های باز", openHeaders, openRows)}
-              >
-                خروجی Word
-              </button>
-            </div>
-
-            <Pager
-              page={openPaged.page}
-              pages={openPaged.pages}
-              onPrev={() => setOpenPage((p) => Math.max(1, p - 1))}
-              onNext={() => setOpenPage((p) => Math.min(openPaged.pages, p + 1))}
-              onGo={(p) => setOpenPage(p)}
-            />
-
-            <h4 style={{ marginTop: 16 }}>📦 دستورکارهای بایگانی‌شده ({closedFilteredAll.length})</h4>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>شماره دستور کار</th><th>نام تجهیز</th><th>کد</th><th>سایز</th>
-                    <th>نوع درخواست</th><th>وضعیت</th><th>تاریخ شروع</th><th>تاریخ پایان</th><th>تاریخ بایگانی</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {closedPaged.slice.length ? (
-                    closedPaged.slice.map((r) => (
-                      <tr key={r.id}>
-                        <td className="mono">{r.woNumber}</td>
-                        <td>{r.name}</td>
-                        <td>{r.code}</td>
-                        <td>{r.size}</td>
-                        <td>{r.type}</td>
-                        <td>{r.statusSnapshot || "—"}</td>
-                        <td>{r.startDate || "—"}</td>
-                        <td>{r.endDate || "—"}</td>
-                        <td>{(r.closedAt || "").slice(0, 10)}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan={9} className="empty">موردی نیست</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => exportCSV(`دستورکار-بایگانی-${ymd()}.csv`, closedHeaders, closedRows)}
-              >
-                خروجی Excel (CSV)
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => exportDOC(`دستورکار-بایگانی-${ymd()}.doc`, "دستورکارهای بایگانی‌شده", closedHeaders, closedRows)}
-              >
-                خروجی Word
-              </button>
-            </div>
-
-            <Pager
-              page={closedPaged.page}
-              pages={closedPaged.pages}
-              onPrev={() => setClosedPage((p) => Math.max(1, p - 1))}
-              onNext={() => setClosedPage((p) => Math.min(closedPaged.pages, p + 1))}
-              onGo={(p) => setClosedPage(p)}
+          <div ref={reqListRef}>
+            <RequestPanel
+              reqFilters={reqFilters}
+              setReqFilters={setReqFilters}
+              reqFiltersApplied={reqFiltersApplied}
+              setReqFiltersApplied={setReqFiltersApplied}
+              reqUnitFilter={reqUnitFilter}
+              setReqUnitFilter={setReqUnitFilter}
+              openPaged={openPaged}
+              closedPaged={closedPaged}
+              openFilteredAll={openFilteredAll}
+              closedFilteredAll={closedFilteredAll}
+              openPage={openPage}
+              setOpenPage={setOpenPage}
+              closedPage={closedPage}
+              setClosedPage={setClosedPage}
+              openHeaders={openHeaders}
+              openRows={openRows}
+              closedHeaders={closedHeaders}
+              closedRows={closedRows}
+              ymd={ymd}
+              PAGE_SIZE={PAGE_SIZE}
             />
           </div>
         )}

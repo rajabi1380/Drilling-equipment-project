@@ -1,48 +1,55 @@
 // ===============================
-// 📦 کاتالوگ تجهیزات و ثابت‌ها
+// کاتالوگ تجهیزات و واحدها
 // ===============================
 
 // --- دکل‌ها ---
 export const RIGS = ["دکل 13", "دکل 21", "دکل 24", "دکل 28", "دکل 31", "دکل 38"];
 
-// --- اعضای تیم تعمیرات ---
-export const TEAM_MEMBERS = [
-  "محسن جلالی زاده",
-  "هومن رجبی",
-  "همیار پلیس",
-  "سینا نوذری",
-  "شایان مرادی",
-  "میثم عزیزی",
+// واحدهای عملیاتی (برای فرم‌ها / گروه‌های عملیاتی)
+export const OPS_UNITS = [
+  { id: "inspection", label: "بازرسی" },
+  { id: "pipe", label: "تعمیرات و نگهداری لوله" },
+  { id: "downhole", label: "درون‌چاهی" },
+  { id: "surface", label: "برون‌چاهی" },
+  { id: "mandeyabi", label: "مانده‌یابی" },
 ];
 
-// --- انواع خرابی‌ها ---
+// --- اعضای تیم (نمونه) ---
+export const TEAM_MEMBERS = [
+  "علی رضایی",
+  "مهدی کریمی",
+  "سارا اکبری",
+  "مجتبی احمدی",
+  "رضا محمدی",
+  "لیلا جعفری",
+];
+
+// --- آیتم‌های خرابی نمونه ---
 export const FAILURE_ITEMS = [
-  { id: "F001", code: "BRG-01", name: "خرابی یاتاقان / بلبرینگ" },
-  { id: "F002", code: "SEAL-02", name: "نشتی پکینگ/سیل" },
-  { id: "F003", code: "THRD-03", name: "آسیب رزوه" },
-  { id: "F004", code: "BEND-04", name: "خمش / تاب برداشتن" },
-  { id: "F005", code: "CRK-05", name: "ترک سطحی" },
+  { id: "F001", code: "BRG-01", name: "بلبرینگ آسیب‌دیده" },
+  { id: "F002", code: "SEAL-02", name: "نشتی سیل" },
+  { id: "F003", code: "THRD-03", name: "خرابی رزوه" },
+  { id: "F004", code: "BEND-04", name: "خمیدگی یا تاب" },
+  { id: "F005", code: "CRK-05", name: "ترک یا شکستگی" },
   { id: "F006", code: "COR-06", name: "خوردگی" },
-  { id: "F007", code: "LEAK-07", name: "نشتی سیال" },
-  { id: "F008", code: "WORN-08", name: "سایش بیش از حد" },
+  { id: "F007", code: "LEAK-07", name: "نشتی عمومی" },
+  { id: "F008", code: "WORN-08", name: "سایش زیاد" },
 ];
 
 // ===============================
-// ⚙️ تابع تولید کد یونیک تجهیز
+// ژنراتور کد تجهیز
 // ===============================
 function makeEquipCode(baseCode, size, index) {
-  const cleanSize = String(size)
-    .replace(/[^0-9.]/g, "")
-    .replace(".", "");
+  const cleanSize = String(size).replace(/[^0-9.]/g, "").replace(".", "");
   const serial = String(index).padStart(3, "0");
   return `${baseCode}-${cleanSize}-${serial}`;
 }
 
 // ===============================
-// 🎯 تجهیزات اختصاصی هر واحد
+// کاتالوگ تجهیزات بر اساس واحد
 // ===============================
 
-// --- سطحی (Surface) ---
+// --- برون‌چاهی (Surface) ---
 const SURFACE_TOOLS = [
   ...Array.from({ length: 5 }, (_, i) => ({
     name: "Kelly",
@@ -70,7 +77,7 @@ const BOP_ITEMS = [
   })),
 ];
 
-// --- چوک مانیفولد (Choke) ---
+// --- Manifold ---
 const CHOKE_MANIFOLD = [
   ...Array.from({ length: 4 }, (_, i) => ({
     name: "Choke Valve",
@@ -84,7 +91,7 @@ const CHOKE_MANIFOLD = [
   })),
 ];
 
-// --- تعمیرات و نگهداری لوله (Pipe) ---
+// --- لوله (Pipe) ---
 const PIPE_ITEMS = [
   ...Array.from({ length: 10 }, (_, i) => ({
     name: "Drill Pipe",
@@ -103,7 +110,7 @@ const PIPE_ITEMS = [
   })),
 ];
 
-// --- درون چاهی ---
+// --- درون‌چاهی ---
 const DOWNHOLE_ITEMS = [
   ...Array.from({ length: 4 }, (_, i) => ({
     name: "Mud Motor",
@@ -117,7 +124,7 @@ const DOWNHOLE_ITEMS = [
   })),
 ];
 
-// --- برون چاهی ---
+// --- برون‌چاهی (بالادستی) ---
 const UPHOLE_ITEMS = [
   ...Array.from({ length: 5 }, (_, i) => ({
     name: "Elevator",
@@ -146,7 +153,7 @@ const MANDEYABI_ITEMS = [
 ];
 
 // ===============================
-// 🧠 تجمیع کامل برای ادمین
+// فهرست کامل
 // ===============================
 export const FULL_CATALOG = [
   ...SURFACE_TOOLS,
@@ -158,33 +165,32 @@ export const FULL_CATALOG = [
   ...MANDEYABI_ITEMS,
 ];
 
-// ===============================
-// ⚙️ تابع اصلی دسترسی براساس واحد و نقش
-// ===============================
 export function getCatalogForUnit(unitId, role = "user") {
   const u = String(unitId || "").toLowerCase();
   const isAdmin = ["admin", "manager", "super"].includes(String(role).toLowerCase());
-
-  if (isAdmin) {
-    return FULL_CATALOG; // ادمین‌ها کل تجهیزات رو می‌بینن
-  }
+  if (isAdmin) return FULL_CATALOG;
 
   switch (u) {
-    case "surface": return SURFACE_TOOLS;
-    case "bop": return BOP_ITEMS;
-    case "choke": return CHOKE_MANIFOLD;
+    case "surface":
+      return SURFACE_TOOLS;
+    case "bop":
+      return BOP_ITEMS;
+    case "choke":
+      return CHOKE_MANIFOLD;
     case "pipe":
-    case "pipe-maintenance": return PIPE_ITEMS;
-    case "downhole": return DOWNHOLE_ITEMS;
-    case "uphole": return UPHOLE_ITEMS;
-    case "mandeyabi": return MANDEYABI_ITEMS;
-    default: return [];
+    case "pipe-maintenance":
+      return PIPE_ITEMS;
+    case "downhole":
+      return DOWNHOLE_ITEMS;
+    case "uphole":
+      return UPHOLE_ITEMS;
+    case "mandeyabi":
+      return MANDEYABI_ITEMS;
+    default:
+      return [];
   }
 }
 
-// ===============================
-// 📋 اکسپورت گروهی
-// ===============================
 export const CATALOG = {
   surface: SURFACE_TOOLS,
   bop: BOP_ITEMS,

@@ -12,6 +12,7 @@ import Sidebar from "./Components/Sidebar";
 
 import InOut from "./Components/InOut";
 import Turning from "./Components/Turning";
+import Inspection from "./Components/Inspection";
 import DownholeInOut from "./Components/DownholeInOut";
 import GroupOpsPage from "./Components/GroupOpsPage";
 import Reports from "./Components/Report";
@@ -104,6 +105,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <Turning />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/maintenance/inspection"
+            element={
+              <ProtectedRoute>
+                <Inspection />
               </ProtectedRoute>
             }
           />

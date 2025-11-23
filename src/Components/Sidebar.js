@@ -1,18 +1,15 @@
 // src/Components/Sidebar.js
-import React from "react";
+import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
-import { useAuth } from "./Context/AuthContext"; // مسیر درست ✅
+import { useAuth } from "./Context/AuthContext";
 
 export default function Sidebar({ open, onClose }) {
-  const { user, isAdmin, isSuper, hasUnit } = useAuth();
+  const { isSuper, hasUnit } = useAuth();
 
-  // ادمین یا مدیر: دسترسی کامل
   const isFullAccess = isSuper;
 
-  // ────────────────────────────────
-  // رسید و ارسال:
-  // همه به جز بازرسی و تراشکاری
+  // دسترسی‌ها
   const canInOut =
     isFullAccess ||
     hasUnit("DOWNHOLE") ||
@@ -20,72 +17,96 @@ export default function Sidebar({ open, onClose }) {
     hasUnit("MANDEYABI") ||
     hasUnit("PIPE");
 
-  // موجودی دکل‌ها:
-  // درون‌چاهی، برون‌چاهی، مانده‌یابی، تعمیرات، مدیرها و ادمین‌ها
-  const canRigs =
-    isFullAccess ||
-    hasUnit("DOWNHOLE") ||
-    hasUnit("UPHOLE") ||
-    hasUnit("MANDEYABI") ||
-    hasUnit("PIPE");
+  const canRigs = canInOut;
+  const canReports = canInOut;
+  const canGroupOps = canInOut;
 
-  // گزارشات:
-  // همه واحدهای میدانی (درون‌چاهی، برون‌چاهی، مانده‌یابی، تعمیرات) + مدیرها
-  const canReports =
-    isFullAccess ||
-    hasUnit("DOWNHOLE") ||
-    hasUnit("UPHOLE") ||
-    hasUnit("MANDEYABI") ||
-    hasUnit("PIPE");
+  const canTurning = isFullAccess || hasUnit("INSPECTION") || hasUnit("TURNING");
 
-  // گروه‌های عملیاتی:
-  // مثل گزارشات
-  const canGroupOps =
-    isFullAccess ||
-    hasUnit("DOWNHOLE") ||
-    hasUnit("UPHOLE") ||
-    hasUnit("MANDEYABI") ||
-    hasUnit("PIPE");
+  // حالت باز/بسته شدن زیرمنو
+  const [openDropdown, setOpenDropdown] = useState(null);
 
-  // دستورکارها:
-  // فقط بازرسی و تراشکاری و مدیرها
-  const canTurning =
-    isFullAccess || hasUnit("INSPECTION") || hasUnit("TURNING");
+  const toggleDropdown = (key) => {
+    setOpenDropdown((prev) => (prev === key ? null : key));
+  };
 
-  // ────────────────────────────────
-  const items = [
-    { label: "رسید و ارسال", to: "/maintenance/inout", allowed: canInOut },
-    { label: "موجودی دکل‌ها", to: "/rigs", allowed: canRigs },
-    { label: "دستورکارها", to: "/maintenance/turning", allowed: canTurning },
-    { label: "گروه‌های عملیاتی", to: "/groupops", allowed: canGroupOps },
-    { label: "گزارشات", to: "/maintenance/reports", allowed: canReports },
-  ];
-
-  // ────────────────────────────────
   const handleBlockedClick = (e) => {
     e.preventDefault();
     alert("شما مجاز به دسترسی به این بخش نیستید.");
   };
 
+  const items = [
+    { label: "رسید و ارسال", to: "/maintenance/inout", allowed: canInOut },
+    { label: "موجودی دکل‌ها", to: "/rigs", allowed: canRigs },
+
+    {
+      label: "دستورکارها",
+      key: "turning",
+      allowed: canTurning,
+      children: [
+        { label: "تراشکاری", to: "/maintenance/turning" },
+        { label: "بازرسی", to: "/maintenance/inspection" },
+      ],
+    },
+
+    { label: "گروه‌های عملیاتی", to: "/groupops", allowed: canGroupOps },
+    { label: "گزارشات", to: "/maintenance/reports", allowed: canReports },
+  ];
+
   return (
     <>
       {open && <div className="sb-backdrop" onClick={onClose} />}
 
-      <aside
-        className={`sidebar ${open ? "is-open" : ""}`}
-        dir="rtl"
-        aria-hidden={!open}
-      >
+      <aside className={`sidebar ${open ? "is-open" : ""}`} dir="rtl">
         <header className="sb-header">
           <b>منوی سامانه</b>
-          <button className="sb-close" onClick={onClose}>
-            ✕
-          </button>
+          <button className="sb-close" onClick={onClose}>✕</button>
         </header>
 
         <nav className="sb-menu">
-          {items.map((item) =>
-            item.allowed ? (
+          {items.map((item) => {
+            // اگر آیتم زیرمجموعه دارد
+            if (item.children) {
+              if (!item.allowed) {
+                return (
+                  <div key={item.label} className="sb-parent disabled" onClick={handleBlockedClick}>
+                    <span>{item.label}</span>
+                  </div>
+                );
+              }
+
+              const isOpen = openDropdown === item.key;
+
+              return (
+                <div key={item.label} className="sb-group">
+                  <div
+                    className="sb-subitem"
+                    onClick={() => toggleDropdown(item.key)}
+                  >
+                    <span>{item.label}</span>
+                   
+                  </div>
+
+                  <div className={`sb-children ${isOpen ? "open" : ""}`}>
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        className={({ isActive }) =>
+                          "sb-subitem" + (isActive ? " is-active" : "")
+                        }
+                        onClick={onClose}
+                      >
+                        {child.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
+            // آیتم معمولی
+            return item.allowed ? (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -93,20 +114,19 @@ export default function Sidebar({ open, onClose }) {
                   "sb-subitem" + (isActive ? " is-active" : "")
                 }
                 onClick={onClose}
-                end
               >
                 {item.label}
               </NavLink>
             ) : (
-              <span
+              <div
                 key={item.to}
                 className="sb-subitem disabled"
                 onClick={handleBlockedClick}
               >
                 {item.label}
-              </span>
-            )
-          )}
+              </div>
+            );
+          })}
         </nav>
 
         <footer className="sb-footer">
