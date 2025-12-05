@@ -7,7 +7,6 @@ import "./Inout.css";
 // Utils
 import { loadLS, saveLS } from "../utils/ls";
 import { toISO16 } from "../utils/date";
-import { exportCSV, exportDOC } from "../utils/export";
 import { keyOf, splitKey } from "../utils/Key";
 
 // Rig + Catalog
@@ -392,7 +391,7 @@ export default function InOut() {
     show("📤 خروج تجهیز ثبت شد", "info");
     if (destNorm === "تراشکاری") createWOFromOut(p, unit);
     if (destNorm === "بازرسی") createInspectionWOFromOut(p, unit);
-  }, [isSuper, unitFallback, currentStockOf, show, createWOFromOut]);
+  }, [createInspectionWOFromOut, createWOFromOut, currentStockOf, isSuper, show, unitFallback]);
 
   /* ---------- RIG ↔ RIG ---------- */
   const addRigMove = useCallback((payload) => {
