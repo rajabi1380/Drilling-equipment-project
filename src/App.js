@@ -19,13 +19,13 @@ import Reports from "./Components/Report";
 import Request from "./Components/Request";
 import Login from "./Components/Login";
 import RigStock from "./Components/RigStock";
+import Dashboard from "./Components/Dashboard";
+
 
 import { AuthProvider, useAuth } from "./Components/Context/AuthContext";
 
 import "./styles/base.css";
 import "./App.css";
-
-const Dashboard = () => <h1>داشبورد</h1>;
 
 /* ✅ روت محافظت شده: اگر لاگین نباشه می‌فرسته /login */
 function ProtectedRoute({ children }) {
@@ -116,6 +116,7 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+       
 
           {/* گزارش‌ها */}
           <Route

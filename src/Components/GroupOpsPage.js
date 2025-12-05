@@ -1,4 +1,4 @@
-﻿// src/Components/GroupOpsPage.js
+// src/Components/GroupOpsPage.js
 import React, { useEffect, useMemo, useState } from "react";
 import ModalBase from "./common/ModalBase";
 import "./common/ModalBase.css";
@@ -13,12 +13,9 @@ import { useAuth } from "./Context/AuthContext";
 const LS_KEY = "ops_groups_v2";
 
 const UNITS = OPS_UNITS;
-
 const REQ_TYPES = ["بندگیری", "بازرسی لوله", "پشتیبانی", "تعمیر", "سایر"];
 
-function uid() {
-  return Math.random().toString(36).slice(2, 8) + "-" + Date.now().toString(36).slice(-5);
-}
+const uid = () => Math.random().toString(36).slice(2, 8) + "-" + Date.now().toString(36).slice(-5);
 
 function humanDuration(start, end) {
   const s = parseAnyDate(start)?.getTime();
@@ -32,14 +29,12 @@ function humanDuration(start, end) {
   return `${m} دقیقه`;
 }
 
-/* ---------------------- ویرایش/ایجاد گروه ---------------------- */
+/* ---------------------- فرم ساخت/ویرایش گروه ---------------------- */
 function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
   const { isAdmin, currentUnit } = useAuth();
   const timePlugin = useMemo(() => <TimePicker position="bottom" />, []);
 
-  const defaultUnit = isAdmin
-    ? initial?.unit || allowedUnits[0] || "downhole"
-    : currentUnit || allowedUnits[0];
+  const defaultUnit = isAdmin ? initial?.unit || allowedUnits[0] || "downhole" : currentUnit || allowedUnits[0];
 
   const [unit, setUnit] = useState(defaultUnit);
   const [rig, setRig] = useState(initial?.rig || "");
@@ -97,12 +92,8 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
       size="lg"
       footer={
         <>
-          <button className="btn" onClick={onClose}>
-            انصراف
-          </button>
-          <button className="btn primary" onClick={handleSave} disabled={!valid}>
-            ذخیره
-          </button>
+          <button className="btn" onClick={onClose}>بستن</button>
+          <button className="btn primary" onClick={handleSave} disabled={!valid}>ذخیره</button>
         </>
       }
     >
@@ -110,12 +101,7 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
         <div className="row">
           <div className="col">
             <label className="label">واحد</label>
-            <select
-              className="input"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              disabled={!isAdmin}
-            >
+            <select className="input" value={unit} onChange={(e) => setUnit(e.target.value)} disabled={!isAdmin}>
               {(isAdmin ? allowedUnits : [currentUnit]).map((uid) => {
                 const u = UNITS.find((x) => x.id === uid);
                 return (
@@ -129,24 +115,15 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
           <div className="col">
             <label className="label">نام دکل درخواست‌کننده</label>
             <select className="input" value={rig} onChange={(e) => setRig(e.target.value)}>
-              <option value="" disabled>
-                انتخاب کنید...
-              </option>
+              <option value="" disabled>انتخاب کنید...</option>
               {RIGS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
+                <option key={r} value={r}>{r}</option>
               ))}
             </select>
           </div>
           <div className="col">
             <label className="label">عنوان عملیات</label>
-            <input
-              className="input"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="مثال: بندگیری لوله یا بازرسی دوره‌ای"
-            />
+            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثلاً بازرسی دکل ۲۴" />
           </div>
         </div>
 
@@ -155,23 +132,16 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
             <label className="label">نوع درخواست</label>
             <select className="input" value={reqType} onChange={(e) => setReqType(e.target.value)}>
               {REQ_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
           <div className="col">
             <label className="label">کد عملیات (اختیاری)</label>
-            <input
-              className="input"
-              value={opCode}
-              onChange={(e) => setOpCode(e.target.value)}
-              placeholder="OPS-4521"
-            />
+            <input className="input" value={opCode} onChange={(e) => setOpCode(e.target.value)} placeholder="OPS-4521" />
           </div>
           <div className="col">
-            <label className="label">مدت عملیات</label>
+            <label className="label">مدت زمان عملیات</label>
             <input className="input" value={durationLabel} readOnly />
           </div>
         </div>
@@ -188,11 +158,11 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
               plugins={[timePlugin]}
               inputClass="input"
               containerClassName="rmdp-rtl"
-              placeholder="تاریخ/ساعت ثبت درخواست"
+              placeholder="انتخاب تاریخ/ساعت درخواست"
             />
           </div>
           <div className="col">
-            <label className="label">تاریخ ارسال گروه</label>
+            <label className="label">تاریخ شروع عملیات</label>
             <DatePicker
               value={startAt}
               onChange={(d) => setStartAt(d && d.toDate ? d.toDate() : d)}
@@ -202,7 +172,7 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
               plugins={[timePlugin]}
               inputClass="input"
               containerClassName="rmdp-rtl"
-              placeholder="تاریخ/ساعت اعزام"
+              placeholder="انتخاب تاریخ/ساعت شروع"
             />
           </div>
           <div className="col">
@@ -216,14 +186,14 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
               plugins={[timePlugin]}
               inputClass="input"
               containerClassName="rmdp-rtl"
-              placeholder="تاریخ/ساعت پایان"
+              placeholder="انتخاب تاریخ/ساعت پایان"
             />
           </div>
         </div>
 
         <div className="row">
           <div className="col">
-            <label className="label">نام افراد ارسالی به دکل</label>
+            <label className="label">اعضای اعزامی به عملیات</label>
             <div style={{ display: "flex", gap: 8 }}>
               <input
                 className="input"
@@ -235,34 +205,22 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
                     addMember();
                   }
                 }}
-                placeholder="نام و نام‌خانوادگی را وارد و Enter بزنید"
+                placeholder="نام و نام خانوادگی را بنویسید و Enter بزنید"
               />
-              <button type="button" className="btn" onClick={addMember}>
-                افزودن
-              </button>
+              <button type="button" className="btn" onClick={addMember}>افزودن</button>
             </div>
             {cleanMembers.length > 0 && (
               <div className="chips" style={{ marginTop: 8 }}>
                 {cleanMembers.map((m) => (
                   <span key={m} className="chip" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                     {m}
-                    <button
-                      type="button"
-                      className="icon"
-                      style={{ width: 22, height: 22 }}
-                      onClick={() => removeMember(m)}
-                      aria-label="حذف"
-                    >
-                      ×
-                    </button>
+                    <button type="button" className="icon" style={{ width: 22, height: 22 }} onClick={() => removeMember(m)} aria-label="حذف">x</button>
                   </span>
                 ))}
               </div>
             )}
             {cleanMembers.length === 0 && (
-              <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                حداقل یک نفر باید ثبت شود.
-              </div>
+              <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>حداقل یک نفر باید ثبت شود.</div>
             )}
           </div>
         </div>
@@ -271,7 +229,7 @@ function OpsFormModal({ open, onClose, initial, onSave, allowedUnits }) {
   );
 }
 
-/* ---------------------- لیست گروه‌های عملیاتی ---------------------- */
+/* ---------------------- صفحه گروه‌های عملیاتی ---------------------- */
 export default function OpsGroupsShared() {
   const { isAdmin, currentUnit } = useAuth();
 
@@ -292,9 +250,7 @@ export default function OpsGroupsShared() {
   const filtered = useMemo(() => {
     let data = rows.slice().sort((a, b) => (parseAnyDate(b.reqAt) || 0) - (parseAnyDate(a.reqAt) || 0));
 
-    if (!isAdmin) {
-      data = data.filter((r) => r.unit === currentUnit);
-    }
+    if (!isAdmin) data = data.filter((r) => r.unit === currentUnit);
 
     const s = q.trim().toLowerCase();
     if (s) {
@@ -309,7 +265,6 @@ export default function OpsGroupsShared() {
         );
       });
     }
-
     return data;
   }, [rows, q, isAdmin, currentUnit]);
 
@@ -320,24 +275,15 @@ export default function OpsGroupsShared() {
 
   const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page, pageSize]);
 
-  const openCreate = () => {
-    setEditRow(null);
-    setModalOpen(true);
-  };
-
-  const openEdit = (r) => {
-    setEditRow(r);
-    setModalOpen(true);
-  };
-
+  const openCreate = () => { setEditRow(null); setModalOpen(true); };
+  const openEdit = (r) => { setEditRow(r); setModalOpen(true); };
   const remove = (id) => setRows(rows.filter((r) => r.id !== id));
 
   const saveRow = (payload) => {
     if (!isAdmin && payload.unit !== currentUnit) {
-      alert("اجازه ثبت خارج از واحد فعال وجود ندارد.");
+      alert("امکان ثبت برای واحدی غیر از واحد جاری شما وجود ندارد.");
       return;
     }
-
     setRows((prev) => {
       const i = prev.findIndex((x) => x.id === payload.id);
       if (i >= 0) {
@@ -354,13 +300,13 @@ export default function OpsGroupsShared() {
     "عنوان عملیات",
     "نوع درخواست",
     "کد عملیات",
-    "نام دکل درخواست‌کننده",
+    "دکل درخواست‌کننده",
     "واحد",
-    "نام افراد ارسالی",
+    "اعضای اعزامی",
     "تاریخ درخواست",
-    "تاریخ ارسال گروه",
-    "تاریخ پایان عملیات",
-    "مدت عملیات",
+    "تاریخ شروع",
+    "تاریخ پایان",
+    "مدت زمان",
     "وضعیت",
   ];
 
@@ -369,7 +315,7 @@ export default function OpsGroupsShared() {
       <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
         <input
           className="input"
-          placeholder="جستجو در عنوان، دکل، افراد یا نوع درخواست..."
+          placeholder="جستجو در عنوان، نوع درخواست، دکل یا اعضا..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
           style={{ flex: "1 1 280px", minWidth: 240 }}
@@ -379,26 +325,24 @@ export default function OpsGroupsShared() {
           variant="compact"
           getExport={() => ({
             filename: "ops-groups",
-            title: "گزارش گروه‌های عملیاتی",
+            title: "گروه‌های عملیاتی",
             headers: exportHeaders,
             rows: filtered.map((r) => ({
               "عنوان عملیات": r.title,
               "نوع درخواست": r.reqType,
               "کد عملیات": r.opCode,
-              "نام دکل درخواست‌کننده": r.rig,
+              "دکل درخواست‌کننده": r.rig,
               "واحد": r.unit,
-              "نام افراد ارسالی": (r.members || []).join("، "),
+              "اعضای اعزامی": (r.members || []).join("، "),
               "تاریخ درخواست": fmtFa(r.reqAt),
-              "تاریخ ارسال گروه": fmtFa(r.startAt),
-              "تاریخ پایان عملیات": fmtFa(r.endAt),
-              "مدت عملیات": humanDuration(r.startAt, r.endAt),
-              "وضعیت": r.status === "done" ? "اتمام عملیات" : "در حال انجام",
+              "تاریخ شروع": fmtFa(r.startAt),
+              "تاریخ پایان": fmtFa(r.endAt),
+              "مدت زمان": humanDuration(r.startAt, r.endAt),
+              "وضعیت": r.status === "done" ? "پایان یافته" : "باز",
             })),
           })}
         />
-        <button className="btn primary" onClick={openCreate}>
-          ثبت گروه عملیاتی
-        </button>
+        <button className="btn primary" onClick={openCreate}>ثبت گروه عملیاتی</button>
       </div>
 
       <div className="table-wrap" style={{ border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff" }}>
@@ -408,12 +352,12 @@ export default function OpsGroupsShared() {
               <th>عنوان عملیات</th>
               <th>نوع درخواست</th>
               <th>کد عملیات</th>
-              <th>دکل درخواست‌کننده</th>
+              <th>دکل</th>
               <th>واحد</th>
-              <th>افراد اعزامی</th>
+              <th>اعضای اعزامی</th>
               <th>تاریخ درخواست</th>
-              <th>تاریخ ارسال گروه</th>
-              <th>تاریخ پایان عملیات</th>
+              <th>تاریخ شروع</th>
+              <th>تاریخ پایان</th>
               <th>مدت</th>
               <th />
             </tr>
@@ -433,19 +377,15 @@ export default function OpsGroupsShared() {
                   <td>{fmtFa(r.endAt) || "-"}</td>
                   <td>{humanDuration(r.startAt, r.endAt)}</td>
                   <td style={{ whiteSpace: "nowrap" }}>
-                    <button className="btn" onClick={() => openEdit(r)}>
-                      ویرایش
-                    </button>
-                    <button className="btn danger" onClick={() => remove(r.id)} style={{ marginInlineStart: 6 }}>
-                      حذف
-                    </button>
+                    <button className="btn" onClick={() => openEdit(r)}>ویرایش</button>
+                    <button className="btn danger" onClick={() => remove(r.id)} style={{ marginInlineStart: 6 }}>حذف</button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td colSpan={11} style={{ textAlign: "center", padding: 12, color: "#6b7280" }}>
-                  موردی برای نمایش ثبت نشده است.
+                  موردی ثبت نشده است.
                 </td>
               </tr>
             )}
@@ -478,5 +418,3 @@ export default function OpsGroupsShared() {
     </div>
   );
 }
-
-

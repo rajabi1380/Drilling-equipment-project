@@ -1,6 +1,6 @@
-/* src/Components/Sidebar.css */
+﻿/* src/Components/Sidebar.css */
 
-/* بک‌دراپ وقتی سایدبار باز است */
+/* پوشش پس‌زمینه برای موبایل و حالتی که سایدبار روی صفحه می‌آید */
 .sb-backdrop {
   position: fixed;
   inset: 0;
@@ -46,7 +46,7 @@
   cursor: pointer;
 }
 
-/* منوی اصلی */
+/* بدنه منو */
 .sb-menu {
   overflow: auto;
   padding-inline: 2px;
@@ -55,7 +55,7 @@
   gap: 14px;
 }
 
-/* والد منوی دارای زیرمنو */
+/* گزینه‌ی والد برای گروه‌ها */
 .sb-parent {
   width: 100%;
   padding: 12px;
@@ -85,7 +85,7 @@
   transform: rotate(180deg);
 }
 
-/* زیرمنو */
+/* فرزندان */
 .sb-children {
   max-height: 0;
   overflow: hidden;
@@ -97,7 +97,7 @@
   max-height: 250px;
 }
 
-/* آیتم زیرمنو */
+/* آیتم فرزند */
 .sb-subitem {
   display: block;
   width: 100%;
@@ -144,19 +144,19 @@
   font-size: 13px;
 }
 
-/* ورودی‌ها راست‌به‌چپ */
+/* جهت RTL برای ورودی‌ها در سایدبار */
 [dir="rtl"] .sidebar input {
   direction: rtl;
 }
 
-/* ریسپانسیو */
+/* واکنش‌گرا */
 @media (max-width: 480px) {
   .sidebar {
     width: 270px;
   }
 }
 
-/* کاهش موشن */
+/* احترام به کاربران کم‌حرکت */
 @media (prefers-reduced-motion: reduce) {
   .sidebar {
     transition: none;

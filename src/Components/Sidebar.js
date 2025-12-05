@@ -9,7 +9,6 @@ export default function Sidebar({ open, onClose }) {
 
   const isFullAccess = isSuper;
 
-  // دسترسی‌ها
   const canInOut =
     isFullAccess ||
     hasUnit("DOWNHOLE") ||
@@ -20,10 +19,8 @@ export default function Sidebar({ open, onClose }) {
   const canRigs = canInOut;
   const canReports = canInOut;
   const canGroupOps = canInOut;
-
   const canTurning = isFullAccess || hasUnit("INSPECTION") || hasUnit("TURNING");
 
-  // حالت باز/بسته شدن زیرمنو
   const [openDropdown, setOpenDropdown] = useState(null);
 
   const toggleDropdown = (key) => {
@@ -32,26 +29,33 @@ export default function Sidebar({ open, onClose }) {
 
   const handleBlockedClick = (e) => {
     e.preventDefault();
-    alert("شما مجاز به دسترسی به این بخش نیستید.");
+    alert("دسترسی شما به این بخش محدود است.");
   };
 
-  const items = [
-    { label: "رسید و ارسال", to: "/maintenance/inout", allowed: canInOut },
-    { label: "موجودی دکل‌ها", to: "/rigs", allowed: canRigs },
-
+  // آیتم‌های مشترک واحدها
+  const userItems = [
+    { label: "رسید / ارسال", to: "/maintenance/inout", allowed: canInOut },
+    { label: "دکل", to: "/rigs", allowed: canRigs },
     {
-      label: "دستورکارها",
+      label: "دستور کارها ",
       key: "turning",
       allowed: canTurning,
       children: [
-        { label: "تراشکاری", to: "/maintenance/turning" },
-        { label: "بازرسی", to: "/maintenance/inspection" },
+        { label: "دستور کار بازرسی", to: "/maintenance/turning" },
+        { label: "دستور کار تراشکاری", to: "/maintenance/inspection" },
       ],
     },
-
-    { label: "گروه‌های عملیاتی", to: "/groupops", allowed: canGroupOps },
+    { label: " گروههای عملیاتی", to: "/groupops", allowed: canGroupOps },
     { label: "گزارشات", to: "/maintenance/reports", allowed: canReports },
   ];
+
+  // ادمین: همان آیتم‌ها با دسترسی کامل + کاربران
+  const adminItems = [
+    ...userItems.map((item) => ({ ...item, allowed: true })),
+    { label: "کاربران", to: "/users", allowed: true },
+  ];
+
+  const items = isSuper ? adminItems : userItems;
 
   return (
     <>
@@ -59,13 +63,12 @@ export default function Sidebar({ open, onClose }) {
 
       <aside className={`sidebar ${open ? "is-open" : ""}`} dir="rtl">
         <header className="sb-header">
-          <b>منوی سامانه</b>
-          <button className="sb-close" onClick={onClose}>✕</button>
+          <b>پنل ناوبری</b>
+          <button className="sb-close" onClick={onClose}>×</button>
         </header>
 
         <nav className="sb-menu">
           {items.map((item) => {
-            // اگر آیتم زیرمجموعه دارد
             if (item.children) {
               if (!item.allowed) {
                 return (
@@ -84,7 +87,6 @@ export default function Sidebar({ open, onClose }) {
                     onClick={() => toggleDropdown(item.key)}
                   >
                     <span>{item.label}</span>
-                   
                   </div>
 
                   <div className={`sb-children ${isOpen ? "open" : ""}`}>
@@ -105,7 +107,6 @@ export default function Sidebar({ open, onClose }) {
               );
             }
 
-            // آیتم معمولی
             return item.allowed ? (
               <NavLink
                 key={item.to}
@@ -130,7 +131,7 @@ export default function Sidebar({ open, onClose }) {
         </nav>
 
         <footer className="sb-footer">
-          <span className="muted">© واحد تعمیرات و نگهداری</span>
+          <span className="muted">برای دسترسی سریع از منوی بالا استفاده کنید.</span>
         </footer>
       </aside>
     </>
