@@ -1,11 +1,6 @@
-// src/App.jsx
+﻿// src/App.jsx
 import React, { useState } from "react";
-import {
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import Navbar from "./Components/Navbar";
 import Sidebar from "./Components/Sidebar";
@@ -20,21 +15,19 @@ import Request from "./Components/Request";
 import Login from "./Components/Login";
 import RigStock from "./Components/RigStock";
 import Dashboard from "./Components/Dashboard";
-
+import Main from "./Components/Main";
 
 import { AuthProvider, useAuth } from "./Components/Context/AuthContext";
 
 import "./styles/base.css";
 import "./App.css";
 
-/* ✅ روت محافظت شده: اگر لاگین نباشه می‌فرسته /login */
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
-/* ✅ شِل اصلی برنامه: کنترل نمایش Navbar/Sidebar بر اساس لاگین و آدرس */
 function AppContent() {
   const [sbOpen, setSbOpen] = useState(false);
   const holidaysFa = ["1403-01-01", "1403-01-02", "1403-03-14", "1403-06-31"];
@@ -42,11 +35,11 @@ function AppContent() {
   const location = useLocation();
 
   const isLoginPage = location.pathname === "/login";
+  const isLandingPage = location.pathname === "/";
 
   return (
     <div dir="rtl">
-      {/* 🔒 فقط وقتی لاگین کرده و توی /login نیست، Navbar و Sidebar نمایش داده می‌شود */}
-      {!isLoginPage && user && (
+      {!isLoginPage && !isLandingPage && user && (
         <>
           <Navbar
             onLogout={logout}
@@ -58,20 +51,20 @@ function AppContent() {
         </>
       )}
 
-      {/* برای صفحه لاگین استایل ساده، برای بقیه همان .page */}
-      <main className={!isLoginPage && user ? "page" : ""}>
+      <main className={!isLoginPage && !isLandingPage && user ? "page" : ""}>
         <Routes>
-          {/* صفحه لاگین: اگر لاگین است، دیگه نگذار اینجا بماند */}
           <Route
             path="/login"
-            element={
-              user ? <Navigate to="/" replace /> : <Login />
-            }
+            element={user ? <Navigate to="/dashboard" replace /> : <Login />}
           />
 
-          {/* داشبورد و بقیه صفحات همگی محافظت‌شده */}
           <Route
             path="/"
+            element={user ? <Navigate to="/dashboard" replace /> : <Main />}
+          />
+
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
@@ -79,7 +72,6 @@ function AppContent() {
             }
           />
 
-          {/* نگهداری - رسید/ارسال */}
           <Route
             path="/maintenance/inout"
             element={
@@ -89,7 +81,6 @@ function AppContent() {
             }
           />
 
-          {/* درخواست‌ها */}
           <Route
             path="/maintenance/request"
             element={
@@ -99,7 +90,6 @@ function AppContent() {
             }
           />
 
-          {/* تراشکاری */}
           <Route
             path="/maintenance/turning"
             element={
@@ -108,6 +98,7 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/maintenance/inspection"
             element={
@@ -116,9 +107,7 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
-       
 
-          {/* گزارش‌ها */}
           <Route
             path="/maintenance/reports"
             element={
@@ -128,7 +117,6 @@ function AppContent() {
             }
           />
 
-          {/* داون‌هول */}
           <Route
             path="/downhole/inout"
             element={
@@ -138,7 +126,6 @@ function AppContent() {
             }
           />
 
-          {/* گروه‌های عملیاتی */}
           <Route
             path="/groupops"
             element={
@@ -148,7 +135,6 @@ function AppContent() {
             }
           />
 
-          {/* موجودی دکل‌ها */}
           <Route
             path="/rigs"
             element={
@@ -158,14 +144,13 @@ function AppContent() {
             }
           />
 
-          {/* هر آدرس اشتباه → اگر لاگین است بفرست داشبورد؛ اگر نه → لاگین */}
           <Route
             path="*"
             element={
               user ? (
-                <Navigate to="/" replace />
+                <Navigate to="/dashboard" replace />
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />
@@ -175,7 +160,6 @@ function AppContent() {
   );
 }
 
-/* ✅ روت اصلی: کل اپ داخل AuthProvider */
 export default function App() {
   return (
     <AuthProvider>
